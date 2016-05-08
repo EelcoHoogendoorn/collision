@@ -6,7 +6,7 @@ package:
   name: collision
   version: 0.1.dev0
 source:
-  path: ..
+  git_url: https://github.com/EelcoHoogendoorn/collision.git
 
 build:
   number: 0
