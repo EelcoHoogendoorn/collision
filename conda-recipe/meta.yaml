@@ -22,7 +22,7 @@ requirements:
     - boost
     - eigen
 
-    - python
+    - python 3.5*
     - numpy 1.10*
     - numpy-indexed 0.2*
     - future 0.15*
@@ -30,7 +30,7 @@ requirements:
     - cached-property 1.3*
 
   run:
-    - python
+    - python 3.5*
     - numpy 1.10*
     - numpy-indexed 0.2*
     - future 0.15*
