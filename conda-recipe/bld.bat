@@ -1,9 +1,10 @@
 
-CALL "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64\vcvars\vcvarsamd64.bat"
+CALL "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64\vcvarsamd64.bat"
 
 rmdir /S /Q build
 
 set BUILD_CONFIG=Release
+set PY_VER=2.7
 
 REM pick generator based on python version
 if %PY_VER%==2.7 (
