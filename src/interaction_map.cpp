@@ -3,15 +3,11 @@
 #include "linalg.cpp"
 #include "ndarray.cpp"
 #include <limits>
-//#include <boost/foreach.hpp>
-//#include <iostream>
-//#include <algorithm>
 #include <boost/range/irange.hpp>
 #include <boost/range/algorithm.hpp>
 #include <boost/range.hpp>
 #include <boost/range/any_range.hpp>
 #include <iostream>
-//#include <boost/smart_ptr.hpp>
 
 
 #include <boost/iterator.hpp>
@@ -59,6 +55,11 @@ yet this is no longer the main bottleneck in the simulation anymore anyway
 
 class VertexGridHash {
 public:
+    /*
+    this datastructure allows for coarse/braod collision queries
+    it is one of the most simple datastructures to implement and debug,
+    and is chosen here with future GPU-porting in mind, as it maps well to parallel architectures
+    */
 	
 	const int vertices;
 	int_2 cell_id;		//the cell coordinates a vertex resides in
