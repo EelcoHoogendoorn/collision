@@ -486,7 +486,7 @@ public:
 	{
 		const auto _position	= position	.range<const float3>();
 		const auto _normal		= normal	.range<const float3>();
-		const auto _incidence = incidence	.range<const int3>();
+		const auto _incidence   = incidence	.range<const int3>();
 
 		//could precompute a temp inner/outer array; not sure it is worthwhile tho
 

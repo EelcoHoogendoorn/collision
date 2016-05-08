@@ -9,17 +9,21 @@ boost python interface definition
 */
 
 
+// ugly hack apparently required to init the numpy C API
 #if PY_MAJOR_VERSION >= 3
 int
 #else
 void
 #endif
-init_numpy() {import_array();}
+init_numpy()
+{
+import_array();
+}
 
 
 using namespace boost::python;
 
-BOOST_PYTHON_MODULE(collision)
+BOOST_PYTHON_MODULE(Collision)
 {
 	//initialize numpy support
 	init_numpy();

@@ -13,7 +13,7 @@ int main(){
     std::cout << f[0][0] << std::endl;
     for (auto r: f.range<int3>())
     {
-        std::cout << r << std::endl;
+        std::cout << r*r << std::endl;
     }
     return f[0][0];
 }

@@ -214,10 +214,9 @@ public:
     array(NULL)
   {
     npy_intp shape[NDims];
-    PyArrayObject* a;
-
     boost::detail::multi_array::copy_n(extents, NDims, shape);
 
+    PyArrayObject* a;
     a = (PyArrayObject*)PyArray_SimpleNew(
         NDims, shape, ::detail::numpy_type_map<T>::typenum);
     if (a == NULL) {
@@ -227,19 +226,28 @@ public:
     init_from_array(a);
   }
 
+
   /* simplified constructor */
+  explicit numpy_boost(int s0) :
+    super(NULL, std::vector<typename super::index>(NDims, 0)),
+    array(NULL)
+  {
+    int s[] {s0};
+    init_from_shapeptr(&s[0]);
+  }
   explicit numpy_boost(int s0, int s1) :
     super(NULL, std::vector<typename super::index>(NDims, 0)),
     array(NULL)
   {
-    int q[2] {s0, s1};
-    PyArrayObject* a;
+    int s[] {s0, s1};
+    init_from_shapeptr(&s[0]);
+  }
 
+  void init_from_shapeptr(int* s){
     npy_intp shape[NDims];
-    boost::detail::multi_array::copy_n(q, NDims, shape);
+    boost::detail::multi_array::copy_n(s, NDims, shape);
 
-//    boost::detail::multi_array::copy_n(extents, NDims, shape);
-
+    PyArrayObject* a;
     a = (PyArrayObject*)PyArray_SimpleNew(
         NDims, shape, ::detail::numpy_type_map<T>::typenum);
     if (a == NULL) {
