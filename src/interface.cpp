@@ -1,9 +1,7 @@
 #include <iostream>
-#include "collisioninfo.cpp"
-#include "trianglemesh.cpp"
-#include "linalg.cpp"
-#include "ndarray.cpp"
 #include <python.h>
+
+#include "collision_info.cpp"
 
 /*
 boost python interface definition

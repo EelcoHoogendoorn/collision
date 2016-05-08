@@ -1,13 +1,14 @@
 #pragma once
 
-#include "linalg.cpp"
-#include "ndarray.cpp"
-#include "interaction_map.cpp"
-#include "trianglemesh.cpp"
 #include <boost/range/irange.hpp>
 #include <math.h>
 #include <algorithm>
 #include <tuple>
+
+#include "linalg.cpp"
+#include "ndarray.cpp"
+#include "interaction_map.cpp"
+#include "triangle_mesh.cpp"
 
 
 
@@ -68,6 +69,17 @@ public:
 	int count;		//number of collisions found
 	const bool self_intersect;
 
+    // property interface
+	float_2 get_bary(){return this->bary;}
+	void set_bary(float_2 bary){this->bary = bary;}
+	float_2 get_normal(){return this->normal;}
+	void set_normal(float_2 normal){this->normal = normal;}
+	float_1 get_depth(){return this->depth;}
+	void set_depth(float_1 depth){this->depth = depth;}
+	int_1 get_triangle(){return this->triangle;}
+	void set_triangle(int_1 triangle){this->triangle = triangle;}
+
+
 	//construct from vertex count alone
 	CollisionInfo(VertexGridHash& vg, TriangleMesh& tm, const bool self_intersect):
 		vg(vg), tm(tm),
@@ -92,39 +104,6 @@ public:
 			if (t==-1) continue;	//skip unpaired vertices
 			body(v, t);
 		}
-	}
-	//same as above, but internalizing mutable boilerplate and sign conventions for force computations
-	//signature for body is (vertexindex, triangleindex, penetrationdepth, contactnormal, relativevelocity) -> reactionforce
-	template <class F>
-	void for_each_contact_react(const F& body)
-	{
-		auto ci_bary		= bary			.range<const float3>();
-		auto ci_normal		= normal		.range<const float3>();
-		auto ci_depth		= depth			.range<const float>();
-		auto ci_triangle	= triangle		.range<const int>();
-
-		auto vg_velocity	= vg.velocity	.range<const float3>();
-		auto tm_velocity	= tm.velocity	.range<const float3>();
-		auto tm_incidence	= tm.incidence	.range<const int3>();
-
-		auto vg_force		= vg.force		.range<float3>();	//output containers
-		auto tm_force		= tm.force		.range<float3>();
-
-		for_each_contact([&](const int v, const int t)
-		{
-			const int3   tvi  = tm_incidence[t];
-			const float3 bary = ci_bary[v];
-
-			float3 rv = vg_velocity[v];
-			for (const int i: boost::irange(0,3))
-				rv -= tm_velocity[tvi[i]] * bary[i];
-
-			const float3 force = body(v, t, ci_depth[v], ci_normal[v], rv);
-
-			vg_force[v] += force;
-			for (const int i: boost::irange(0,3))
-				tm_force[tvi[i]] -= force * bary[i];
-		});
 	}
 
 	//wrap bounding box iterator, adding in triangle-awareness
@@ -277,12 +256,4 @@ public:
 		}
 	}
 
-	float_2 get_bary(){return this->bary;}
-	void set_bary(float_2 bary){this->bary = bary;}
-	float_2 get_normal(){return this->normal;}
-	void set_normal(float_2 normal){this->normal = normal;}
-	float_1 get_depth(){return this->depth;}
-	void set_depth(float_1 depth){this->depth = depth;}
-	int_1 get_triangle(){return this->triangle;}
-	void set_triangle(int_1 triangle){this->triangle = triangle;}
 };

@@ -1,12 +1,13 @@
 #pragma once
 
-#include "linalg.cpp"
-#include "ndarray.cpp"
 #include <limits>
 #include <boost/range/irange.hpp>
 #include <boost/range/algorithm.hpp>
 #include <boost/range.hpp>
 #include <boost/range/any_range.hpp>
+
+#include "linalg.cpp"
+#include "ndarray.cpp"
 
 
 /*
