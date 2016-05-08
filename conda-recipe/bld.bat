@@ -27,7 +27,7 @@ REM move folder
 mkdir build
 cd build
 
-cmake .. -G"%GENERATOR_NAME%" ^
+cmake ../src -G"%GENERATOR_NAME%" ^
     -Wno-dev ^
     -DCMAKE_BUILD_TYPE=%BUILD_CONFIG% ^
     -DCMAKE_INSTALL_PREFIX="%PREFIX%" ^
@@ -36,8 +36,8 @@ cmake .. -G"%GENERATOR_NAME%" ^
     -DPYTHONLIBS_VERSION_STRING=%PY_VER% ^
 	-DBOOST_ROOT="%PREFIX%"
 
-cmake --build . --clean-first --target ALL_BUILD --config %BUILD_CONFIG%
-cmake --build . --clean-first --target INSTALL --config %BUILD_CONFIG%
+REM cmake --build . --clean-first --target ALL_BUILD --config %BUILD_CONFIG%
+REM cmake --build . --clean-first --target INSTALL --config %BUILD_CONFIG%
 
 if errorlevel 1 exit 1
 
