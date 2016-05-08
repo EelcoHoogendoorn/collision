@@ -1,5 +1,5 @@
 
-REM CALL "C:\Program Files (x86)\Microsoft Visual Studio 9.0\VC\bin\amd64\vcvars\vcvarsamd64.bat"
+CALL "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\amd64\vcvars\vcvarsamd64.bat"
 
 rmdir /S /Q build
 
