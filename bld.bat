@@ -36,9 +36,6 @@ cmake ../src -G"%GENERATOR_NAME%" ^
 
 cmake --build . --clean-first --target ALL_BUILD --config %BUILD_CONFIG%
 
-cd release
-activate collision
-python -c 'import Collision; print(Collision.main())'
-cd..
 cd..
 
+copy .\build\release\Collision.pyd .

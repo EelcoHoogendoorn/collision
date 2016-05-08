@@ -1,6 +1,10 @@
+#pragma once
+
 #include "linalg.cpp"
 #include "ndarray.cpp"
 #include "interaction_map.cpp"
+#include "trianglemesh.cpp"
+#include "collisioninfo.cpp"
 #include <boost/range/irange.hpp>
 #include <math.h>
 #include <algorithm>
@@ -16,88 +20,6 @@ this module strives for maximum 'correctness', without sacrificing any performan
 mutable state is for rookies ;)
 */
 
-
-
-/*
-compute barycentric coords along normal direction d
-thank you, expression templates, for not making me write this out
-*/
-inline _float3 area_project(const _float33& s, const _float3& d)
-{
-	const _float3 r( 
-		d.dot(s.col(1).cross(s.col(2))), 
-		d.dot(s.col(2).cross(s.col(0))), 
-		d.dot(s.col(0).cross(s.col(1))) 
-		);
-	return r / r.sum();
-}
-
-
-/*
-iterative intersection algorithm on a point versus a triangle swept along its triangle normals
-returns bary, normal and depth
-tvp are triangle vertex positions relative to origin point
-tvn are triangle vertex normals
-*/
-std::tuple<const float3, const float3, const float> triangle_point_test_const(
-	const _float33& tvp, const _float33& tvn)
-{
-	const auto getnormal = [&](const _float3& bary)  { return tvn * bary;};						//get normal, given a bary
-	const auto getbary   = [&](const _float3& normal){ return area_project(tvp, normal);};		//get bary, given a normal
-	const auto iterate   = [&](const _float3& bary)  { return getbary(getnormal(bary));};		//one iteration is a composition of the two
-
-	const  float  pou = 1.0/3;
-	const _float3 init(pou,pou,pou);
-
-	const _float3 bary   = iterate(iterate(init));			//two fixed point iterations seem to suffice
-	const _float3 normal = getnormal(bary).normalized();	//need normal to compute depth
-	const  float  depth  = (tvp * bary).dot(normal);		//compute depth along normal
-
-	return std::make_tuple(bary, normal, depth);
-}
-
-
-/*
-collide vertexgrid and trianglemesh
-in order to build up collision info object
-kindof a method of collisioninfo, but it is so crucial to physical behavior, it is good to have it here
-*/
-void triangles_versus_points(CollisionInfo& ci)
-{
-	auto& vg = ci.vg;
-	auto& tm = ci.tm;
-
-	auto vg_position	= vg.position	.range<const float3>();
-
-	auto ci_depth		= ci.depth		.range<const float>();
-	auto ci_triangle	= ci.triangle	.range<const int>();
-
-	ci.for_each_pair([&]	//loop over all nearby triangle-vertex pairs
-	(
-		const int t, const int v,
-		const float33& tvp, const float33& tvn					//triangle vertex positions and normals
-	)
-	{
-		//intersect translated triangle, and unpack results
-		const auto   intersection = triangle_point_test_const(tvp.colwise()-vg_position[v], tvn);
-		const float3 bary		  = std::get<0>(intersection);
-		const float  depth        = std::get<2>(intersection);
-
-		//decide what to do with the intersection result?
-		const Action action =							
-			depth > +2*tm.thickness ||							//check intersection result for bounds
-			depth < -2*tm.thickness ||
-			(bary < 0).any() ?									
-				Action::Ignore:									//if out of bounds, ignore
-				ci_triangle[v] == -1 ?							//check for novelty
-					Action::Store :								//if novel, store
-					depth*depth < ci_depth[v]*ci_depth[v] ?		//check for superiority
-						Action::Overwrite:						//if superior, overwrite
-						Action::Ignore;
-
-		return std::make_tuple(action, intersection);			//return result and what to do with it
-	});
-}
 
 /*
 add contact forces between membranes

@@ -1,5 +1,6 @@
 #include <iostream>
-#include "interactions.cpp"
+#include "collisioninfo.cpp"
+#include "trianglemesh.cpp"
 #include "linalg.cpp"
 #include "ndarray.cpp"
 #include <python.h>
@@ -21,6 +22,11 @@ import_array();
 }
 
 
+//if not the good way, why not the bad way?
+const VertexGridHash& get_vertexgrid  (CollisionInfo& ci){return ci.vg;}
+const TriangleMesh&   get_trianglemesh(CollisionInfo& ci){return ci.tm;}
+
+
 using namespace boost::python;
 
 BOOST_PYTHON_MODULE(Collision)
@@ -33,10 +39,8 @@ BOOST_PYTHON_MODULE(Collision)
 	numpy_boost_python_register_type<float, 1>();
 	numpy_boost_python_register_type<float, 2>();
 
-	//global functions
-	def("triangles_versus_points", triangles_versus_points);
 
-	class_<VertexGridHash>("VertexGridHash", init<float_2, float_2, float_2, float_2, float>())
+	class_<VertexGridHash>("VertexGridHash", init<float_2, float>())
 		.add_property(
 		"position", &VertexGridHash::get_position, &VertexGridHash::set_position)
 		.add_property(
@@ -48,11 +52,11 @@ BOOST_PYTHON_MODULE(Collision)
 		
 		.def_readonly("vertices", &VertexGridHash::vertices)
 		
-		.def("unit_test", &VertexGridHash::unit_test)
+//		.def("unit_test", &VertexGridHash::unit_test)
 		;
 
 
-	class_<TriangleMesh>("TriangleMesh", init<float_2, float_2, float_2, float_2, int_2, float>())
+	class_<TriangleMesh>("TriangleMesh", init<float_2, float_2, int_2, float>())
 		.def("boundingbox", &TriangleMesh::boundingbox)
 		.add_property(
 		"position", &TriangleMesh::get_position, &TriangleMesh::set_position)
