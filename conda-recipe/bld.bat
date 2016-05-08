@@ -37,7 +37,7 @@ cmake ../src -G"%GENERATOR_NAME%" ^
     -DPYTHON_INCLUDE_DIR:PATH="%PREFIX%/include" ^
     -DPYTHON_LIBRARY:FILEPATH="%PYTHON_LIBRARY%" ^
 	-DBOOST_ROOT="%PREFIX%" ^
-	-DEIGEN_INCLUDE_DIR:PATH="%PREFIX%/Library/include/eigen" ^
+	-DEIGEN_INCLUDE_DIR:PATH="%PREFIX%/Library/include" ^
 	-DNUMPY_INCLUDE_DIR:PATH="%SP_DIR%/numpy/core/include"
 
 cmake --build . --clean-first --target ALL_BUILD --config %BUILD_CONFIG%
