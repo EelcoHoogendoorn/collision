@@ -1,42 +1,22 @@
-
 #pragma once
-#include "linalg.cpp"
-#include "ndarray.cpp"
+
 #include <limits>
+#include <iostream>
+
 #include <boost/range/irange.hpp>
 #include <boost/range/algorithm.hpp>
 #include <boost/range.hpp>
 #include <boost/range/any_range.hpp>
-#include <iostream>
-
-
 #include <boost/iterator.hpp>
 #include <boost/iterator/permutation_iterator.hpp>
 #include <boost/iterator/transform_iterator.hpp>
 
-
+#include "linalg.cpp"
+#include "ndarray.cpp"
 
 
 //used for hashing calcs
 const int3 primes(73856093, 19349663, 83492791);		
-
-//used for iteration over half-sym volume around a voxel
-const int3 offset[13] = {
-	int3( 0, 0,+1),
-	int3( 0,+1,-1),
-	int3( 0,+1, 0),
-	int3( 0,+1,+1),
-	int3(+1,-1,-1),
-	int3(+1,-1, 0),
-	int3(+1,-1,+1),
-	int3(+1, 0,-1),
-	int3(+1, 0, 0),
-	int3(+1, 0,+1),
-	int3(+1,+1,-1),
-	int3(+1,+1, 0),
-	int3(+1,+1,+1),
-};
-
 
 
 /*
@@ -246,8 +226,6 @@ public:
 	}
 
 
-
-
 	//abstract away the iteration over a gridcell
 	boost::iterator_range<boost::permutation_iterator<int*, boost::integer_range<int>::iterator>> 
 		vertices_from_cell(const int3& cell)
@@ -319,120 +297,5 @@ public:
 			if (in_box(v)) body(v);
 	}
 
-//	//iterate over one half of neighbors
-//	template <class F>
-//	void for_each_neighbor_cell(const int3& center, const F& body)
-//	{
-//		for (const int3 o: offset)
-//		{
-//			const int3 neighbor = center + o;
-//			if ((neighbor<0).any() || (neighbor>=size).any()) continue;		//skip cells out of range
-//			body(neighbor);
-//		}
-//	}
-
-//	//symmetric iteration over all vertex pairs, summing reaction forces
-//	template <class F>
-//	void for_each_vertex_pair(const F& body)
-//	{
-//		const float ls2 = lengthscale*lengthscale;
-//		const auto _position	= position.range<const float3>();
-//		const auto _velocity	= velocity.range<const float3>();
-//		const auto _force		= force.range<float3>();
-//
-//		//this function wraps sign conventions regarding relative position and force
-//		const auto wrapper = [&](const int vi, const int vj){
-//			const float3 rp = _position[vi] - _position[vj];
-//			const float d2 = (rp*rp).sum();
-//			if (d2>ls2) return;
-//			const float3 rv = _velocity[vi] - _velocity[vj];
-//			const float3 f = body(vi,vj, rp,rv);		//compute reaction forces for this vertex-pair
-//			_force[vi] += f; _force[vj] -= f;
-//		};
-//
-//		//loop over all buckets
-//		std::vector<int> bi(16);
-//		for_each_cell([&](const int3 ci)
-//		{
-//			//this sucker is needed 15 times; it makes sense to precompute
-//			bi.clear();
-//			boost::copy(vertices_from_cell(ci), std::back_inserter(bi));
-//
-//			//interaction within bucket
-//			for (const int vi : bi)
-//				for (const int vj : bi)
-//					if (vi==vj) break; else
-//						wrapper(vi, vj);
-//			//loop over all neighboring buckets
-//			for_each_neighbor_cell(ci, [&](const int3 cj){
-//				const auto bj = vertices_from_cell(cj);
-//				for (const int vj : bj)		//loop over other guy first; he might be empty, giving early exit
-//					for (const int vi : bi)
-//						wrapper(vi, vj);
-//			});
-//		});
-//	}
-//	//for debugging purposes
-//	template <class F>
-//	void for_each_vertex_pair_naive(const F& body)
-//	{
-//		const float ls2 = lengthscale*lengthscale;
-//		const auto _position	= position.range<const float3>();
-//		const auto _velocity	= velocity.range<const float3>();
-//		const auto _force		= force.range<float3>();
-//
-//		//this function wraps sign conventions regarding relative position and force
-//		const auto wrapper = [&](const int vi, const int vj){
-//			const float3 rp = _position[vi] - _position[vj];
-//			const float d2 = (rp*rp).sum();
-//			if (d2>ls2) return;
-//			const float3 rv = _velocity[vi] - _velocity[vj];
-//			const float3 f = body(vi,vj, rp,rv);
-//			_force[vi] += f; _force[vj] -= f;
-//		};
-//
-//		for (const int vi : boost::irange(0, vertices))
-//			for (const int vj : boost::irange(0, vertices))
-//				if (vi==vj) break; else
-//					wrapper(vi, vj);
-//	}
-
-
-
-
-
-//	//test vertex-vertex iteration
-//	void unit_test()
-//	{
-//		typedef std::pair<int,int> pair;
-//	//	auto mpair = [](int i, int j) {return (i<j) ? pair(i,j) : pair(j,i);};
-//
-//		const auto push_back_pair = [&](std::vector<pair>& c)
-//		{
-//			return std::function<float3(const int, const int, const float3&, const float3&)>(
-//				[&](const int vi, const int vj, const float3& rp, const float3& rv)
-//			{
-//				c.push_back((vi<vj) ? pair(vi,vj) : pair(vj,vi));
-//				return float3(0,0,0);
-//			});
-//		};
-//
-//		float3 dud(0,0,0);
-//		std::vector<pair> clever;
-////		for_each_vertex_pair([&](int vi, int vj, float3& rp, float3& rv){clever.push_back(mpair(vi, vj)); return float3(0,0,0);});
-//		for_each_vertex_pair(push_back_pair(clever));
-//		boost::sort(clever);
-//
-//		std::vector<pair> naive;
-//		for_each_vertex_pair(push_back_pair(naive));
-////		for_each_vertex_pair_naive([&](int vi, int vj, float3& rp, float3& rv){naive.push_back(mpair(vi, vj)); return float3(0,0,0);});
-//		boost::sort(naive);
-//
-//		if (!boost::equal(clever, naive))
-//		{
-//			throw my_exception("bug in vertex iteration detected!");
-//		}
-//
-//	}
 };
 

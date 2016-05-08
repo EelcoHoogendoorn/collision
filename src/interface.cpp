@@ -1,11 +1,11 @@
+/*
+boost python interface definition
+*/
+
 #include <iostream>
 #include <python.h>
 
 #include "collision_info.cpp"
-
-/*
-boost python interface definition
-*/
 
 
 // ugly hack apparently required to init the numpy C API
@@ -20,13 +20,12 @@ import_array();
 }
 
 
-//if not the good way, why not the bad way?
+// dont remember why this indicetion for the accessors was necessary..
 const VertexGridHash& get_vertexgrid  (CollisionInfo& ci){return ci.vg;}
 const TriangleMesh&   get_trianglemesh(CollisionInfo& ci){return ci.tm;}
 
 
 using namespace boost::python;
-
 BOOST_PYTHON_MODULE(Collision)
 {
 	//initialize numpy support
@@ -90,6 +89,5 @@ BOOST_PYTHON_MODULE(Collision)
 
 	
 	register_exception_translator<my_exception>(&translate);
-
 
 }
