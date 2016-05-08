@@ -1,11 +1,13 @@
 #include <Eigen/Dense>
+#include "ndarray"
+#include <stdio>
 
-
-typedef Eigen::Array<float,3,3> float33;	//used for triangle geometry computations
+typedef Eigen::Array<int,3,1> int3;	//used for triangle geometry computations
 
 
 int main(){
-    float33 f;
-    f[0][0] = -1;
-    return f[0][0];
+    int_2 arr(3, 10);
+    f[0,0] = -1;
+    printf(f[0,0])
+    return f[0,0];
 }

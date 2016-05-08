@@ -246,6 +246,14 @@ public:
   py_ptr() const throw() {
     return (PyObject*)array;
   }
+
+  template<VT>
+  auto range() const
+  {
+    auto start = (VT*)origin();
+    auto end = start + size();
+    return boost::make_iterator_range(start, end);
+  }
 };
 
 #endif
