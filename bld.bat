@@ -37,7 +37,9 @@ cmake ../src -G"%GENERATOR_NAME%" ^
 cmake --build . --clean-first --target ALL_BUILD --config %BUILD_CONFIG%
 REM cmake --build . --clean-first --target INSTALL --config %BUILD_CONFIG%
 
+cd release
+activate collision
+python -c 'import Collision; print(Collision.main())'
 cd..
-
-
+cd..
 

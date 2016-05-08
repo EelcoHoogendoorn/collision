@@ -21,7 +21,7 @@ import_array();
 }
 
 using namespace boost::python;
-BOOST_PYTHON_MODULE(collision)
+BOOST_PYTHON_MODULE(Collision)
 {
 	//initialize numpy support
 	init_numpy();
@@ -30,6 +30,5 @@ BOOST_PYTHON_MODULE(collision)
 
 	//global functions
 	def("main", main);
-
 
 }
