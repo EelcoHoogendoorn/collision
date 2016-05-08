@@ -1,13 +1,18 @@
 #include <Eigen/Dense>
-#include "ndarray"
-#include <stdio>
+#include "ndarray.cpp"
+#include <iostream>
 
-typedef Eigen::Array<int,3,1> int3;	//used for triangle geometry computations
+typedef Eigen::Array<int,3,1> int3;
 
 
 int main(){
-    int_2 arr(3, 10);
-    f[0,0] = -1;
-    printf(f[0,0])
-    return f[0,0];
+    int shape[] { 10, 3};
+    int_2 f(shape);
+    f[0][0] = -1;
+    std::cout << f[0][0] << std::endl;
+    for (auto r: f.range<int3>())
+    {
+        std::cout << r << std::endl;
+    }
+    return f[0][0];
 }

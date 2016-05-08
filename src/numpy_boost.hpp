@@ -227,6 +227,29 @@ public:
     init_from_array(a);
   }
 
+  /* simplified constructor */
+  explicit numpy_boost(int s0, int s1) :
+    super(NULL, std::vector<typename super::index>(NDims, 0)),
+    array(NULL)
+  {
+    int q[2] {s0, s1};
+    PyArrayObject* a;
+
+    npy_intp shape[NDims];
+    boost::detail::multi_array::copy_n(q, NDims, shape);
+
+//    boost::detail::multi_array::copy_n(extents, NDims, shape);
+
+    a = (PyArrayObject*)PyArray_SimpleNew(
+        NDims, shape, ::detail::numpy_type_map<T>::typenum);
+    if (a == NULL) {
+      throw boost::python::error_already_set();
+    }
+
+    init_from_array(a);
+  }
+
+
   /* Destructor */
   ~numpy_boost() {
     /* Dereference the numpy array. */
@@ -247,7 +270,7 @@ public:
     return (PyObject*)array;
   }
 
-  template<VT>
+  template<class VT>
   auto range() const
   {
     auto start = (VT*)origin();

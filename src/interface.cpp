@@ -2,11 +2,19 @@
 #include "interactions.cpp"
 #include "linalg.cpp"
 #include "ndarray.cpp"
+#include <python.h>
 
 /*
 boost python interface definition
 */
 
+
+#if PY_MAJOR_VERSION >= 3
+int
+#else
+void
+#endif
+init_numpy() {import_array();}
 
 
 using namespace boost::python;
@@ -14,7 +22,7 @@ using namespace boost::python;
 BOOST_PYTHON_MODULE(collision)
 {
 	//initialize numpy support
-	import_array();
+	init_numpy();
 	//register array types employed; needed to avoid runtime error
 	numpy_boost_python_register_type<int, 1>();
 	numpy_boost_python_register_type<int, 2>();
