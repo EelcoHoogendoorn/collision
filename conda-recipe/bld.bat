@@ -36,8 +36,8 @@ cmake ../src -G"%GENERATOR_NAME%" ^
     -DPYTHONLIBS_VERSION_STRING=%PY_VER% ^
 	-DBOOST_ROOT="%PREFIX%"
 
-REM cmake --build . --clean-first --target ALL_BUILD --config %BUILD_CONFIG%
-REM cmake --build . --clean-first --target INSTALL --config %BUILD_CONFIG%
+cmake --build . --clean-first --target ALL_BUILD --config %BUILD_CONFIG%
+cmake --build . --clean-first --target INSTALL --config %BUILD_CONFIG%
 
 if errorlevel 1 exit 1
 
