@@ -34,7 +34,8 @@ cmake ../src -G"%GENERATOR_NAME%" ^
     -DPYTHON_INCLUDE_PATH:PATH="%PREFIX%/include" ^
     -DPYTHON_LIBRARY:FILEPATH="%PYTHON_LIBRARY%" ^
     -DPYTHONLIBS_VERSION_STRING=%PY_VER% ^
-	-DBOOST_ROOT="%PREFIX%"
+	-DBOOST_ROOT="%PREFIX%" ^
+	-DEigen3_DIR="%PREFIX%"
 
 cmake --build . --clean-first --target ALL_BUILD --config %BUILD_CONFIG%
 cmake --build . --clean-first --target INSTALL --config %BUILD_CONFIG%
