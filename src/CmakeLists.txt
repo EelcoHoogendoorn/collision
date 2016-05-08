@@ -1,6 +1,11 @@
 cmake_minimum_required (VERSION 3.5)
 project (Collision)
 
+
+include_directories(${PYTHON_INCLUDE_DIR})
+include_directories(${NUMPY_INCLUDE_DIR})
+include_directories(${EIGEN_INCLUDE_DIR})
+
 set(Boost_USE_STATIC_LIBS OFF)
 set(Boost_USE_MULTITHREADED ON)
 set(Boost_USE_STATIC_RUNTIME OFF)
@@ -8,15 +13,11 @@ find_package(Boost)
 include_directories(${Boost_INCLUDE_DIRS})
 
 
-find_package(Eigen3 REQUIRED)
-include_directories(EIGEN3_INCLUDE_DIR)
 
-include_directories(${PYTHON_INCLUDE_PATH})
 LINK_DIRECTORIES(${DPYTHON_LIBRARY})
 OPTION(BUILD_SHARED_LIBS ON)
 
 
-ADD_LIBRARY(Collision Collision)
-SET_TARGET_PROPERTIES(Collision PROPERTIES  IMPORTED_LINK_INTERFACE_LIBRARIES dbook)
+ADD_LIBRARY(Collision interface.cpp)
 SET_TARGET_PROPERTIES(Collision PROPERTIES LINKER_LANGUAGE C)
 

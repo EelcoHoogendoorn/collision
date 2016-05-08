@@ -3,7 +3,7 @@ channels:
   - clinicalgraphics
   - conda-forge  # for boost and eigen
 dependencies:
-  - python
+  - python =3.5*
   - numpy =1.10*
   - numpy-indexed =0.2*
   - matplotlib >=1.4.3,<1.6

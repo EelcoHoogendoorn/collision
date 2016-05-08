@@ -1,7 +1,7 @@
 #pragma once
 #define BOOST_DISABLE_ASSERTS 
 
-#include "boost\cstdint.hpp"
+#include <boost/cstdint.hpp>
 
 typedef float float32;
 typedef double float64;

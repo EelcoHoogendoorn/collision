@@ -47,7 +47,6 @@ Temporary Items
 .apdisk
 
 .idea
-.idea/
 CmakeFiles
 CMakeCache
-.idea/vcs.xml
+build

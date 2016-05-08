@@ -4,7 +4,7 @@ defines vector types
 
 #pragma once
 #include "typedefs.cpp"
-#include "Eigen/Dense"
+#include <Eigen/Dense>
 
 
 typedef Eigen::Matrix<float,3,1> _float3;	//workhorse
