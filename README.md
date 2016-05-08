@@ -3,3 +3,6 @@ simple C++ collision detection library with numpy bindings for efficient triangl
 
 makes use of numpy-boost:
 https://github.com/mdboom/numpy-boost
+
+tips on building:
+http://www.recheliu.org/memo/pythonboostcmakemucheasierthabboostbuild

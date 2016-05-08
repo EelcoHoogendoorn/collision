@@ -2,21 +2,25 @@ cmake_minimum_required (VERSION 3.5)
 project (Collision)
 
 
-include_directories(${PYTHON_INCLUDE_DIR})
-include_directories(${NUMPY_INCLUDE_DIR})
-include_directories(${EIGEN_INCLUDE_DIR})
-
 set(Boost_USE_STATIC_LIBS OFF)
 set(Boost_USE_MULTITHREADED ON)
 set(Boost_USE_STATIC_RUNTIME OFF)
-find_package(Boost)
-include_directories(${Boost_INCLUDE_DIRS})
 
+
+
+include_directories(${PYTHON_INCLUDE_DIR})
+include_directories(${NUMPY_INCLUDE_DIR})
+include_directories(${EIGEN_INCLUDE_DIR})
+include_directories(${Boost_INCLUDE_DIR})
 
 
 LINK_DIRECTORIES(${PYTHON_LIBRARY})
-OPTION(BUILD_SHARED_LIBS ON)
+LINK_DIRECTORIES(${Boost_LIBRARIES})
 
 
-ADD_LIBRARY(Collision MODULE test_interface.cpp interface.cpp)
+ADD_LIBRARY(Collision MODULE test_interface.cpp )
 SET_TARGET_PROPERTIES(Collision PROPERTIES SUFFIX ".pyd")
+TARGET_LINK_LIBRARIES(Collision
+    ${Boost_LIBRARIES}
+    ${PYTHON_LIBRARY}
+    )

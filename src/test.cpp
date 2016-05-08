@@ -1,3 +1,4 @@
+#pragma once
 #include <Eigen/Dense>
 #include "ndarray.cpp"
 #include <iostream>
