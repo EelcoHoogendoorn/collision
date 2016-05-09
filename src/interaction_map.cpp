@@ -3,10 +3,11 @@
 #include <limits>
 #include <iostream>
 
+#include <boost/range.hpp>
 #include <boost/range/irange.hpp>
 #include <boost/range/algorithm.hpp>
-#include <boost/range.hpp>
 #include <boost/range/any_range.hpp>
+
 #include <boost/iterator.hpp>
 #include <boost/iterator/permutation_iterator.hpp>
 #include <boost/iterator/transform_iterator.hpp>

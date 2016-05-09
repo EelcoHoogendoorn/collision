@@ -3,6 +3,8 @@ defines numpy boost array types used
 */
 #pragma once
 
+#include <python.h>
+
 #include "typedefs.cpp"
 #include "numpy_boost_python.hpp"
 
@@ -19,3 +21,15 @@ typedef numpy_boost<float, 2> float_2;
 
 typedef numpy_boost<double, 3> double_3;
 
+
+
+// ugly hack apparently required to init the numpy C API
+#if PY_MAJOR_VERSION >= 3
+int
+#else
+void
+#endif
+init_numpy()
+{
+import_array();
+}

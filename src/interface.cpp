@@ -2,27 +2,7 @@
 boost python interface definition
 */
 
-#include <iostream>
-#include <python.h>
-
 #include "collision_info.cpp"
-
-
-// ugly hack apparently required to init the numpy C API
-#if PY_MAJOR_VERSION >= 3
-int
-#else
-void
-#endif
-init_numpy()
-{
-import_array();
-}
-
-
-// dont remember why this indicetion for the accessors was necessary..
-const VertexGridHash& get_vertexgrid  (CollisionInfo& ci){return ci.vg;}
-const TriangleMesh&   get_trianglemesh(CollisionInfo& ci){return ci.tm;}
 
 
 using namespace boost::python;

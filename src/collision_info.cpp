@@ -11,10 +11,8 @@
 #include "triangle_mesh.cpp"
 
 
-
 /*
-compute barycentric coords along normal direction d
-thank you, expression templates, for not making me write this out
+compute barycentric coords of origin-centered triangle along normal direction d
 */
 inline _float3 area_project(const _float33& s, const _float3& d)
 {
@@ -33,7 +31,7 @@ returns bary, normal and depth
 tvp are triangle vertex positions relative to origin point
 tvn are triangle vertex normals
 */
-std::tuple<const float3, const float3, const float> triangle_point_test_const(
+std::tuple<const float3, const float3, const float> triangle_point_test(
 	const _float33& tvp, const _float33& tvn)
 {
 	const auto getnormal = [&](const _float3& bary)  { return tvn * bary;};						//get normal, given a bary
@@ -135,7 +133,6 @@ public:
 	void for_each_pair(const F& body)
 	{
 		CollisionInfo& ci = *this;
-		auto& vg = ci.vg;
 		auto& tm = ci.tm;
 
 		auto tm_incidence	= tm.incidence	.range<const int3>();;
@@ -198,8 +195,8 @@ public:
     {
         auto vg_position	= vg.position	.range<const float3>();
 
-        auto ci_depth		= depth		.range<const float>();
-        auto ci_triangle	= triangle	.range<const int>();
+        auto ci_depth		= depth		    .range<const float>();
+        auto ci_triangle	= triangle	    .range<const int>();
 
         for_each_pair([&]	//loop over all nearby triangle-vertex pairs
         (
@@ -208,7 +205,7 @@ public:
         )
         {
             //intersect translated triangle, and unpack results
-            const auto   intersection = triangle_point_test_const(tvp.colwise()-vg_position[v], tvn);
+            const auto   intersection = triangle_point_test(tvp.colwise()-vg_position[v], tvn);
             const float3 bary		  = std::get<0>(intersection);
             const float  depth        = std::get<2>(intersection);
 
@@ -257,3 +254,8 @@ public:
 	}
 
 };
+
+
+// dont remember why this indicetion for the accessors was necessary..
+const VertexGridHash& get_vertexgrid  (CollisionInfo& ci){return ci.vg;}
+const TriangleMesh&   get_trianglemesh(CollisionInfo& ci){return ci.tm;}
