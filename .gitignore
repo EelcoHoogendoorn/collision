@@ -51,3 +51,4 @@ CmakeFiles
 CMakeCache
 build
 msvs
+*.pyc
