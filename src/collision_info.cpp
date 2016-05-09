@@ -51,6 +51,7 @@ std::tuple<const float3, const float3, const float> triangle_point_test(
 
 /*
 class to handle interactions between a triangle mesh and a pointcloud
+make this a method of grid?
 */
 class CollisionInfo {
 

@@ -1,10 +1,11 @@
 name: collision
 channels:
-  - clinicalgraphics
+  - anaconda
   - conda-forge  # for boost and eigen
+  - clinicalgraphics
 dependencies:
   - python =3.5*
-  - numpy =1.10*
+  - numpy >=1.10*
   - numpy-indexed =0.2*
   - matplotlib >=1.4.3,<1.6
   - future =0.15*
@@ -37,3 +38,7 @@ dependencies:
   - pytest-xdist =1.14
   # docs
   - numpydoc =0.6*
+  # visualize
+  - pyopengl
+  - pip:    # build vispy from master
+    - "--editable=git+https://github.com/vispy/vispy.git#egg=vispy-master"
