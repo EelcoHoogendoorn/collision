@@ -81,10 +81,10 @@ public:
 	//construct from vertex count alone
 	CollisionInfo(VertexGridHash& vg, TriangleMesh& tm, const bool self_intersect):
 		vg(vg), tm(tm),
-		bary    (vg.vertices, 3),
-		normal  (vg.vertices, 3),
-		depth   (vg.vertices),
-		triangle(vg.vertices),
+		bary    ({vg.vertices, 3}),
+		normal  ({vg.vertices, 3}),
+		depth   ({vg.vertices}),
+		triangle({vg.vertices}),
 		count   (-1),
 		self_intersect(self_intersect)
 	{

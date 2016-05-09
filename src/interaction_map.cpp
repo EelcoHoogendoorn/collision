@@ -30,7 +30,6 @@ this makes a dense grid less attractive; plus the part of the datastructure that
 fits snugly in L1 cache
 
 the only way to make this faster would be to actively reorder the input points, to exploit temporal coherency in the lexsort
-yet this is no longer the main bottleneck in the simulation anymore anyway
 */
 
 class VertexGridHash {
@@ -74,8 +73,11 @@ public:
 		position(position),
 		vertices(position.shape()[0]),
 		lengthscale(lengthscale),
-		cell_id(vertices,3), indices(vertices), grid_cell_id(0,3), grid_bucket(0),
-		pivots(vertices+1)
+		cell_id({vertices,3}),
+		indices({vertices}),
+		grid_cell_id({0,3}),
+		grid_bucket({0}),
+		pivots({vertices+1})
 	{
 		//build the datastructure
 		sizing();
@@ -146,8 +148,8 @@ public:
 		entries = 64; while (entries < buckets*2) entries <<= 1; 
 
 		//allocate entry arrays. could use an index too
-		grid_cell_id = int_2(entries,3);
-		grid_bucket  = int_1(entries);
+		grid_cell_id = int_2({entries,3});
+		grid_bucket  = int_1({entries});
 
 		//mark grid as unoccupied
 		fill(grid_bucket , -1);

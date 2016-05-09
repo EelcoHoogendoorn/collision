@@ -36,12 +36,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef __NUMPY_BOOST_HPP__
 #define __NUMPY_BOOST_HPP__
 
+#include <initializer_list>
 #include <boost/python.hpp>
 #include <numpy/arrayobject.h>
 #include <boost/multi_array.hpp>
 #include <boost/cstdint.hpp>
 #include <complex>
 #include <algorithm>
+#include <array>
 
 /* numpy_type_map<T>
 
@@ -215,45 +217,27 @@ public:
   {
     npy_intp shape[NDims];
     boost::detail::multi_array::copy_n(extents, NDims, shape);
-
-    PyArrayObject* a;
-    a = (PyArrayObject*)PyArray_SimpleNew(
-        NDims, shape, ::detail::numpy_type_map<T>::typenum);
-    if (a == NULL) {
-      throw boost::python::error_already_set();
-    }
-
-    init_from_array(a);
+    init_from_shape(shape);
   }
 
-
-  /* simplified constructor */
-  explicit numpy_boost(int s0) :
+  /* Construct a new array based on the dimensions given in the initializer list*/
+  explicit numpy_boost(const std::initializer_list<npy_intp> extents) :
     super(NULL, std::vector<typename super::index>(NDims, 0)),
     array(NULL)
   {
-    int s[] {s0};
-    init_from_shapeptr(&s[0]);
-  }
-  explicit numpy_boost(int s0, int s1) :
-    super(NULL, std::vector<typename super::index>(NDims, 0)),
-    array(NULL)
-  {
-    int s[] {s0, s1};
-    init_from_shapeptr(&s[0]);
-  }
-
-  void init_from_shapeptr(int* s){
     npy_intp shape[NDims];
-    boost::detail::multi_array::copy_n(s, NDims, shape);
+    boost::detail::multi_array::copy_n(extents.begin(), NDims, shape);
+    init_from_shape(shape);
+  }
 
+  void init_from_shape(npy_intp* shape)
+  {
     PyArrayObject* a;
     a = (PyArrayObject*)PyArray_SimpleNew(
         NDims, shape, ::detail::numpy_type_map<T>::typenum);
     if (a == NULL) {
       throw boost::python::error_already_set();
     }
-
     init_from_array(a);
   }
 

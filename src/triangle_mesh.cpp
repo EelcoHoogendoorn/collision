@@ -14,6 +14,7 @@
 class to facilitate interaction of a triangle mesh with a pointcloud
 only handles precompute of bounding boxes really,
 but these may be needed many times per timestep
+should we iteratively deform the mesh along its normals, implementing normal calcs here would make sense too
 */
 class TriangleMesh{
 public:
