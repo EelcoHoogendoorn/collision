@@ -16,6 +16,7 @@
 #include <boost/iterator/transform_iterator.hpp>
 #include <boost/iterator/zip_iterator.hpp>
 #include <boost/range/adaptor/transformed.hpp>
+#include <boost/range/adaptors.hpp>
 
 #include "linalg.cpp"
 #include "ndarray.cpp"
@@ -225,49 +226,53 @@ protected:
 		const auto _cell_id  = cell_id.range<const int3>();
 
 		add_pivot(0);
+
+//        auto res = indices.range<const int>()
+//                    | transformed([&](const int i){return _cell_id[i];})
+//                    | indexed(1)
+//                    | adjacent_filtered([](auto a, auto b){return (a.value() != b.value()).any();})
+//                    | transformed([](auto i){return i.index();});
+
+//        auto res = irange(0, 10);
+//        for (const int i : res)
+//			add_pivot(i);
+
+
 		for (const int i: irange(1, n_vertices))
 			if ((_cell_id[indices[i]] != _cell_id[indices[i-1]]).any())		//if different from the previous one in sorted space
 				add_pivot(i);
+		add_pivot(n_vertices);
+
 		if (np == n_vertices)
 		    throw my_exception("every vertex is in its own cell; that cant be right, can it? lengthscale probably needs to go way up");
-		add_pivot(n_vertices);
+
 		return np - 1;
 	}
 
 
 protected:
-	auto indices_from_bucket(const int b) const
-	{
+	auto indices_from_bucket(const int b) const {
 		return (b == -1) ? irange(0, 0) : irange(pivots[b], pivots[b+1]);
-	}
-	//abstract away the iteration over a gridcell
-	auto vertices_from_cell(const int3& cell) const
-	{
-		const auto piv = indices_from_bucket(cell_map.read(cell));
-		const auto ind = indices.range<int>();			
-		return make_iterator_range(
-			make_permutation_iterator( ind.begin(), piv.begin() ),
-			make_permutation_iterator( ind.end(),   piv.end()   ));
-	}
-
+    }
+	auto vertices_from_cell(const int3& cell) const {
+		return indices_from_bucket(cell_map.read(cell))
+		        | transformed([&](const int i){return indices[i];});
+    }
 public:
     // public traversal interface; what this class is all about
 	template <class F>
-	void for_each_vertex_in_cell(const int3& cell, const F& body) const
-	{
-		//would it help here if we permuted the bucket indices to achieve lexographic iteration?
+	void for_each_vertex_in_cell(const int3& cell, const F& body) const {
 		for (const int i: indices_from_bucket(cell_map.read(cell)))
 			body(indices[i]);
 	}
 
 	//loop over each occupied cell in the grid
 	template <class F>
-	void for_each_cell(const F& body) const
-	{
-		//iterate over entries instead? only helps if entry stores full cell info
+	void for_each_cell(const F& body) const {
 		for (const int b: irange(0, n_cells))
 			body(cell_from_index(b));
 	}
+
 	//loop over bounding box and apply body
 	template <class F>
 	void for_each_vertex_in_bounding_box(const float3& gmin, const float3& gmax, const F& body) const
