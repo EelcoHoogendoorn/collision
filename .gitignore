@@ -52,3 +52,4 @@ CMakeCache
 build
 msvs
 *.pyc
+src/vispy-master
