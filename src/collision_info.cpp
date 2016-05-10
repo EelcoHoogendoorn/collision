@@ -83,10 +83,10 @@ public:
 	//construct from vertex count alone
 	CollisionInfo(VertexGridHash& vg, TriangleMesh& tm, const bool self_intersect):
 		vg(vg), tm(tm),
-		bary    ({vg.vertices, 3}),
-		normal  ({vg.vertices, 3}),
-		depth   ({vg.vertices}),
-		triangle({vg.vertices}),
+		bary    ({vg.n_vertices, 3}),
+		normal  ({vg.n_vertices, 3}),
+		depth   ({vg.n_vertices}),
+		triangle({vg.n_vertices}),
 		count   (-1),
 		self_intersect(self_intersect)
 	{
@@ -98,7 +98,7 @@ public:
 	template <class F>
 	void for_each_contact(const F& body) const
 	{
-		for (const int v: boost::irange(0, vg.vertices))
+		for (const int v: boost::irange(0, vg.n_vertices))
 		{
 			const int t = triangle[v];
 			if (t==-1) continue;	//skip unpaired vertices
@@ -163,7 +163,7 @@ public:
 					//read triangle into local mem matrix for efficient geometry computations
 					//only needed if we hit a vertex at all
 					tvi = tm_incidence[t];
-					for (const int i: boost::irange(0,3))
+					for (const int i: boost::irange(0, 3))
 					{
 						const int v = tvi[i];
 						tvp.col(i) = tm_position[v];

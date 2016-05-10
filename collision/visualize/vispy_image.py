@@ -17,18 +17,22 @@ vol_data = np.flipud(np.rollaxis(vol_data, 1))
 
 clim = [32, 192]
 vol_pw = fig[0, 0]
-vol_pw.volume(vol_data, clim=clim)
-vol_pw.view.camera.elevation = 30
-vol_pw.view.camera.azimuth = 30
-vol_pw.view.camera.scale_factor /= 1.5
+# vol_pw.volume(vol_data, clim=clim)
+# vol_pw.view.camera.elevation = 30
+# vol_pw.view.camera.azimuth = 30
+# vol_pw.view.camera.scale_factor /= 1.5
 
 shape = vol_data.shape
 fig[1, 0].image(vol_data[:, :, shape[2] // 2], cmap='grays', clim=clim,
                 fg_color=(0.5, 0.5, 0.5, 1))
 fig[0, 1].image(vol_data[:, shape[1] // 2, :], cmap='grays', clim=clim,
                 fg_color=(0.5, 0.5, 0.5, 1))
-fig[1, 1].image(vol_data[shape[0] // 2, :, :].T, cmap='grays', clim=clim,
+img = fig[1, 0].image(vol_data[shape[0] // 2, :, :].T, cmap='grays', clim=clim,
                 fg_color=(0.5, 0.5, 0.5, 1))
+
+from vispy.visuals.transforms import (MatrixTransform, STTransform)
+# import vispy.util.transforms
+img.transform = STTransform(scale=[2,2], translate=[100,0])
 
 if __name__ == '__main__':
     fig.show(run=True)
