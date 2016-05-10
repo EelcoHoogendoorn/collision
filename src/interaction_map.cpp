@@ -17,9 +17,6 @@
 #include "ndarray.cpp"
 
 
-//used for hashing calcs
-const int3 primes(73856093, 19349663, 83492791);		
-
 
 /*
 vertex grid spatial collision map
@@ -33,6 +30,9 @@ fits snugly in L1 cache
 the only way to make this faster would be to actively reorder the input points, to exploit temporal coherency in the lexsort
 */
 
+
+//used for hashing calcs
+const int3 primes(73856093, 19349663, 83492791);
 
 class HashMap {
 	const int entries;	//number of entries in hashmap
@@ -84,7 +84,6 @@ public:
 
 
 class VertexGridHash {
-public:
     /*
     this datastructure allows for coarse/braod collision queries
     it is one of the most simple datastructures to implement and debug,
@@ -105,7 +104,7 @@ public:
 
 	boost::shared_ptr<HashMap> hashmap;
 	
-
+public:
 	//interface methods
 	float_2 get_position() const {return this->position;}
 	void set_position(float_2 position){this->position = position;}
@@ -132,7 +131,7 @@ public:
 		writegrid();
 	}
 
-
+private:
 	//map a global coord into the grid local coords
 	inline float3 transform(const float3& v) const
 	{
@@ -152,7 +151,6 @@ public:
 		const auto _cell_id  = cell_id.range<const int3>();
 		return _cell_id[indices[pivots[b]]];
 	}
-
 
 
 	//determine extents of data
@@ -224,6 +222,8 @@ public:
 	}
 
 
+public:
+    // public traversal interface; what this class is all about
 	boost::integer_range<int> indices_from_bucket(const int b) const
 	{
 		if (b==-1){
@@ -245,7 +245,7 @@ public:
 	void for_each_vertex_in_cell(const int3& cell, const F& body) const
 	{
 		//would it help here if we permuted the bucket indices to achieve lexographic iteration?
-		for (const int i: indices_from_bucket(read_bucket(cell)))
+		for (const int i: indices_from_bucket(hashmap->read(cell)))
 			body(indices[i]);
 	}
 

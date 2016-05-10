@@ -27,7 +27,7 @@ BOOST_PYTHON_MODULE(Collision)
 		.add_property(
 		"pivots", &VertexGridHash::get_pivots, &VertexGridHash::set_pivots)
 		
-		.def_readonly("vertices", &VertexGridHash::vertices)
+//		.def_readonly("vertices", &VertexGridHash::vertices)
 		
 //		.def("unit_test", &VertexGridHash::unit_test)
 		;
