@@ -90,10 +90,13 @@ class VertexGridHash {
     and is chosen here with future GPU-porting in mind, as it maps well to parallel architectures
     */
 
+public:
 	float_2 position; //vertex positions
 	const int vertices;     //number of vertices
 
 	const float lengthscale;//size of a virtual voxel, which equals the maximum interaction range of a vertex-vertex pair query
+
+private:
 	float3 pmin, pmax;	    //maximum extent of pointcloud; used to map coordinates to positive integers
 	int3 size;			    //number of virtual buckets in each direction; used to prevent out-of-bound lookup
 

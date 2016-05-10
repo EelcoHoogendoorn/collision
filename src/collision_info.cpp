@@ -1,5 +1,6 @@
 #pragma once
 
+#include <iostream>
 #include <boost/range/irange.hpp>
 #include <math.h>
 #include <algorithm>
@@ -56,8 +57,8 @@ make this a method of grid?
 class CollisionInfo {
 
 public:
-	VertexGridHash& vg;
-	TriangleMesh& tm;
+	const VertexGridHash& vg;
+	const TriangleMesh& tm;
 
 	//precomputed collision properties
 	float_2 bary;
@@ -95,7 +96,7 @@ public:
 	//apply body to each contact pair
 	//body signature is (vertexindex, triangleindex) -> void
 	template <class F>
-	void for_each_contact(const F& body)
+	void for_each_contact(const F& body) const
 	{
 		for (const int v: boost::irange(0, vg.vertices))
 		{
@@ -107,7 +108,7 @@ public:
 
 	//wrap bounding box iterator, adding in triangle-awareness
 	template <class F>
-	void for_each_vertex_in_triangle(const int t, const F& body)
+	void for_each_vertex_in_triangle(const int t, const F& body) const
 	{
 		vg.for_each_vertex_in_bounding_box(
 			tm.bbmin.range<const float3>()[t],
@@ -117,7 +118,7 @@ public:
 	}
 	//wrap bounding box iterator, adding in triangle-awareness
 	template <class F>
-	void for_each_vertex_in_triangle_naive(const int t, const F& body)
+	void for_each_vertex_in_triangle_naive(const int t, const F& body) const
 	{
 		vg.for_each_vertex_in_bounding_box_naive(
 			tm.bbmin.range<const float3>()[t],
@@ -191,7 +192,7 @@ public:
 	}
 
 
-    /* collide vertexgrid and trianglemesh */
+    /* collide vertexgrid and trianglemesh, building up collision info */
     void triangles_versus_points()
     {
         auto vg_position	= vg.position	.range<const float3>();
