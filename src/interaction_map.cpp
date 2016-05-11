@@ -14,6 +14,7 @@
 
 #include "linalg.cpp"
 #include "ndarray.cpp"
+#include "maps.cpp"
 
 using namespace boost;
 using namespace boost::adaptors;
@@ -31,73 +32,7 @@ fits snugly in L1 cache
 the only way to make this faster would be to actively reorder the input points, to exploit temporal coherency in the lexsort
 */
 
-
-//used for hashing calcs
-const int3 primes(73856093, 19349663, 83492791);
-
-
-class HashMap {
-	const int entries;	//number of entries in hashmap
-	int_2 keys;	        //voxel coordinates uniquely identifying a bucket
-	int_1 values;	    //bucket description, or where to look in pivot array
-
-	inline int get_hash(const int3& key) const
-	{
-		const int3 c = key * primes;
-		return (c[0]^c[1]^c[2]) & (entries - 1);
-	}
-
-	static int calc_entries(const int n)
-	{
-		//calc number of entries in hashmap. hashmap should have twice the number of buckets, at mimimum.
-		//absolute size is proportional to the number of vertices in the dataset, not to the space they occupy
-		int entries = 64;
-		while (entries < n*2) entries <<= 1;
-		return entries;
-	}
-
-	inline void write(const int3& key, const int value)
-	{
-		auto _keys = keys.view<int3>();
-		int entry = get_hash(key);				//get entry initial guess
-		// find an empty entry
-		while (true)
-		{
-			if (values[entry] == -1) break;
-			entry = (entry+1) & (entries-1);					//circular increment
-		}
-		values[entry] = value;
-		_keys[entry] = key;
-	}
-
-public:
-    // construct by zipping keys and values range
-    template<class K, class V>
-	HashMap(K ikeys, V ivalues):
-	    entries(calc_entries(boost::distance(ivalues))),
-		keys({entries, 3}),
-		values({entries})
-	{
-		//mark grid as unoccupied
-		fill(values, -1);
-        for (const auto pair : boost::combine(ikeys, ivalues))
-            write(boost::get<0>(pair), boost::get<1>(pair));
-	}
-
-	inline int read(const int3& key) const
-	{
-		const auto _keys  = keys.view<const int3>();
-		int entry = get_hash(key);			//hash guess
-
-		while (true)						//find the right entry
-		{
-			if ((_keys[entry] == key).all()) return values[entry];	//we found it; this should be the most common code path
-			if (values[entry] == -1) return -1;	    				//if we didnt find it yet, we never will
-			entry = (entry + 1) & (entries - 1);					//circular increment
-		}
-	}
-};
-
+typedef int3 cell_type;
 
 class VertexGridHash {
     /*
@@ -120,7 +55,7 @@ protected:
 	int_1 pivots;		    //boundaries between buckets in vertices as viewed under indices
 	const int n_cells;	    //number of cells
 
-	const HashMap cell_map; // maps int3 cell coordinates to bucket index
+	const HashMap<cell_type, int> cell_map; // maps int3 cell coordinates to bucket index
 
 public:
 	//interface methods
@@ -164,7 +99,7 @@ protected:
 	}
 	//convert bucket index into cell coords
 	int3 cell_from_index(const int b) const {
-		return cell_id.view<const int3>()[indices[pivots[b]]];
+		return cell_id.view<const cell_type>()[indices[pivots[b]]];
 	}
 
 
@@ -184,7 +119,7 @@ protected:
 	void indexing()
 	{
 		const auto _position = position.view<const float3>();
-		auto _cell_id  = cell_id .view<int3>();
+		auto _cell_id  = cell_id .view<cell_type>();
 
 		//determine grid cells
 		for (const int v: irange(0, n_vertices))
@@ -212,7 +147,7 @@ protected:
 
 		int np = 0;		//number of pivots
 		const auto add_pivot = [&](const int b) {pivots[np] = b; np += 1;};
-		const auto _cell_id  = cell_id.view<const int3>();
+		const auto _cell_id  = cell_id.view<const cell_type>();
 
 		add_pivot(0);
 

@@ -16,6 +16,7 @@ BOOST_PYTHON_MODULE(Collision)
 	numpy_boost_python_register_type<int, 2>();
 	numpy_boost_python_register_type<float, 1>();
 	numpy_boost_python_register_type<float, 2>();
+//	numpy_boost_python_register_type<int3, 1>();
 
 
 	class_<VertexGridHash>("VertexGridHash", init<float_2, float>())
