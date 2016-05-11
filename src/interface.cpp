@@ -20,8 +20,8 @@ BOOST_PYTHON_MODULE(Collision)
 
 
 	class_<VertexGridHash>("VertexGridHash", init<float_2, float>())
-		.add_property(
-		"cell_id", &VertexGridHash::get_cell_id, &VertexGridHash::set_cell_id)
+//		.add_property(
+//		"cell_id", &VertexGridHash::get_cell_id, &VertexGridHash::set_cell_id)
 		.add_property(
 		"indices", &VertexGridHash::get_indices, &VertexGridHash::set_indices)
 		.add_property(

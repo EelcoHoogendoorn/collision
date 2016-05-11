@@ -50,8 +50,8 @@ protected:
 	float3 pmin, pmax;	    //maximum extent of pointcloud; used to map coordinates to positive integers
 	const int3 size;	    //number of virtual buckets in each direction; used to prevent out-of-bound lookup
 
-	int_2 cell_id;	        //the cell coordinates a vertex resides in
-	int_1 indices;	        //index array mapping the vertices to lexographically sorted order
+	const ndarray<1, cell_type> cell_id;	        //the cell coordinates a vertex resides in
+	const ndarray<1, int      > indices;	        //index array mapping the vertices to lexographically sorted order
 	int_1 pivots;		    //boundaries between buckets in vertices as viewed under indices
 	const int n_cells;	    //number of cells
 
@@ -61,10 +61,10 @@ public:
 	//interface methods
 //	float_2 get_position() const {return this->position;}
 //	void set_position(float_2 position){this->position = position;}
-	int_2 get_cell_id() const {return this->cell_id;}
-	void set_cell_id(int_2 cell_id){this->cell_id = cell_id;}
+//	int_2 get_cell_id() const {return this->cell_id;}
+//	void set_cell_id(int_2 cell_id){this->cell_id = cell_id;}
 	int_1 get_indices() const {return this->indices;}
-	void set_indices(int_1 indices){this->indices = indices;}
+	void set_indices(int_1 indices){}
 	int_1 get_pivots() const {return this->pivots;}
 	void set_pivots(int_1 pivots){this->pivots = pivots;}
 
@@ -74,8 +74,8 @@ public:
 		n_vertices(position.size()),
 		lengthscale(lengthscale),
 		size(measure()),
-		cell_id({n_vertices, 3}),
-		indices({n_vertices}),
+		cell_id(compute_cells()),
+		indices(indexing()),
 		pivots({n_vertices+1}),
 		n_cells(find_cells()),
 		cell_map(
@@ -99,7 +99,7 @@ protected:
 	}
 	//convert bucket index into cell coords
 	int3 cell_from_index(const int b) const {
-		return cell_id.view<const cell_type>()[indices[pivots[b]]];
+		return cell_id[indices[pivots[b]]];
 	}
 
 
@@ -115,22 +115,26 @@ protected:
 		}
 		return transform(pmax - pmin).cast<int>() + 1;  // compute size
 	}
-	//finds the index vector that puts the vertices in a lexographically sorted order
-	void indexing()
+
+	ndarray<1, cell_type> compute_cells() const
 	{
-		auto _cell_id  = cell_id .view<cell_type>();
-
 		//determine grid cells
+	    ndarray<1, cell_type> cidx({n_vertices});
 		for (const int v: irange(0, n_vertices))
-			_cell_id[v] = cell_from_position(position[v]);
-
+			cidx[v] = cell_from_position(position[v]);
+	    return cidx;
+	}
+	//finds the index vector that puts the vertices in a lexographically sorted order
+	ndarray<1, int> indexing() const
+	{
 		//create index array, based on lexographical ordering
-		boost::copy(irange(0, n_vertices), indices.begin());
+	    ndarray<1, int> idx({n_vertices});
+		boost::copy(irange(0, n_vertices), idx.begin());
 		boost::sort(
-	        indices,
+	        idx,
 			[&](const int l, const int r) {
-				const int3 cl = _cell_id[l];
-				const int3 cr = _cell_id[r];
+				const int3 cl = cell_id[l];
+				const int3 cr = cell_id[r];
 				return 
 					cl[0]!=cr[0] ?
 						cl[0]<cr[0]:
@@ -138,6 +142,7 @@ protected:
 							cl[1]<cr[1]:
 							cl[2]<cr[2];
         });
+        return idx;
 	}
 	//divide the sorted vertices into buckets, containing vertices in the same virtual voxel
 	int find_cells()
@@ -146,7 +151,7 @@ protected:
 
 		int np = 0;		//number of pivots
 		const auto add_pivot = [&](const int b) {pivots[np] = b; np += 1;};
-		const auto _cell_id  = cell_id.view<const cell_type>();
+//		const auto _cell_id  = cell_id.view<const cell_type>();
 
 		add_pivot(0);
 
@@ -159,7 +164,7 @@ protected:
 //			add_pivot(i);
 
 		for (const int i: irange(1, n_vertices))
-			if ((_cell_id[indices[i]] != _cell_id[indices[i-1]]).any())		//if different from the previous one in sorted space
+			if ((cell_id[indices[i]] != cell_id[indices[i-1]]).any())		//if different from the previous one in sorted space
 				add_pivot(i);
 		add_pivot(n_vertices);
 
