@@ -42,7 +42,7 @@ class VertexGridHash {
     */
 
 public:
-	float_2 position;       //vertex positions
+	const ndarray<1, float3> position;       //vertex positions
 	const int n_vertices;   //number of vertices
 	const float lengthscale;//size of a virtual voxel, which equals the maximum interaction range of a vertex-vertex pair query
 
@@ -59,8 +59,8 @@ protected:
 
 public:
 	//interface methods
-	float_2 get_position() const {return this->position;}
-	void set_position(float_2 position){this->position = position;}
+//	float_2 get_position() const {return this->position;}
+//	void set_position(float_2 position){this->position = position;}
 	int_2 get_cell_id() const {return this->cell_id;}
 	void set_cell_id(int_2 cell_id){this->cell_id = cell_id;}
 	int_1 get_indices() const {return this->indices;}
@@ -70,7 +70,7 @@ public:
 
 
 	explicit VertexGridHash(const float_2 position, const float lengthscale):
-		position(position),
+		position(position.view<float3>()),
 		n_vertices(position.size()),
 		lengthscale(lengthscale),
 		size(measure()),
@@ -108,7 +108,7 @@ protected:
 	{
 		pmin.fill(+std::numeric_limits<float>::infinity()); 
 		pmax.fill(-std::numeric_limits<float>::infinity());
-		for (const float3 p: position.view<const float3>())
+		for (const float3 p: position)
 		{
 			pmin = pmin.min(p);
 			pmax = pmax.max(p);
@@ -118,12 +118,11 @@ protected:
 	//finds the index vector that puts the vertices in a lexographically sorted order
 	void indexing()
 	{
-		const auto _position = position.view<const float3>();
 		auto _cell_id  = cell_id .view<cell_type>();
 
 		//determine grid cells
 		for (const int v: irange(0, n_vertices))
-			_cell_id[v] = cell_from_position(_position[v]);
+			_cell_id[v] = cell_from_position(position[v]);
 
 		//create index array, based on lexographical ordering
 		boost::copy(irange(0, n_vertices), indices.begin());
@@ -165,7 +164,7 @@ protected:
 		add_pivot(n_vertices);
 
 		if (np == n_vertices)
-		    throw python_exception("every vertex is in its own cell; that cant be right, can it? lengthscale probably needs to go way up");
+		    throw python_exception("every vertex is in its own cell; lengthscale probably needs to go way up");
 
 //        int_1::extent_gen extents;
 //        pivots.view(boost::extents[np - 1]);
@@ -200,10 +199,9 @@ public:
 	template <class F>
 	void for_each_vertex_in_bounding_box(const float3& gmin, const float3& gmax, const F& body) const
 	{
-		const auto _position = position.view<const float3>();
 		const auto in_box = [&](const int v)
 		{
-			const float3 vp = _position[v];
+			const float3 vp = position[v];
 			return !((vp < gmin).any() || (vp > gmax).any());
 		};
 
@@ -229,10 +227,9 @@ public:
 	template <class F>
 	void for_each_vertex_in_bounding_box_naive(const float3& gmin, const float3& gmax, const F& body) const
 	{
-		const auto _position = position.view<const float3>();
 		const auto in_box = [&](const int v)
 		{
-			const float3 vp = _position[v];
+			const float3 vp = position[v];
 			return !((vp<gmin).any() || (vp>gmax).any());
 		};
 

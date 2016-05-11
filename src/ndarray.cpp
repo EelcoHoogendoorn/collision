@@ -9,6 +9,8 @@ defines numpy boost array types used
 #include "numpy_boost_python.hpp"
 
 //using namespace boost::python;
+template <int N, typename T>
+using ndarray = numpy_boost<T, N>;
 
 typedef numpy_boost<int, 1> int_1;
 typedef numpy_boost<int, 2> int_2;

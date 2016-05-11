@@ -10,7 +10,6 @@
 
 #include "ndarray.cpp"
 #include "linalg.cpp"
-#include "exception.cpp"
 
 using namespace boost;
 using namespace boost::adaptors;
