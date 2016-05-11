@@ -5,6 +5,8 @@ boost python interface definition
 #include "exception.cpp"
 #include "interaction_map.cpp"
 
+typedef VertexGridHash<int3> Grid;
+
 
 using namespace boost::python;
 BOOST_PYTHON_MODULE(Collision)
@@ -19,17 +21,17 @@ BOOST_PYTHON_MODULE(Collision)
 //	numpy_boost_python_register_type<int3, 1>();
 
 
-	class_<VertexGridHash>("VertexGridHash", init<float_2, float>())
+	class_<Grid>("VertexGridHash", init<ndarray<2, float>, float>())
 //		.add_property(
-//		"cell_id", &VertexGridHash::get_cell_id, &VertexGridHash::set_cell_id)
+//		"cell_id", &Grid::get_cell_id, &Grid::set_cell_id)
 		.add_property(
-		"indices", &VertexGridHash::get_indices, &VertexGridHash::set_indices)
+		"indices", &Grid::get_indices, &Grid::set_indices)
 		.add_property(
-		"pivots", &VertexGridHash::get_pivots, &VertexGridHash::set_pivots)
+		"pivots", &Grid::get_pivots, &Grid::set_pivots)
 		
-//		.def_readonly("vertices", &VertexGridHash::vertices)
+//		.def_readonly("vertices", &Grid::n_vertices)
 		
-//		.def("unit_test", &VertexGridHash::unit_test)
+//		.def("unit_test", &Grid::unit_test)
 		;
 
 

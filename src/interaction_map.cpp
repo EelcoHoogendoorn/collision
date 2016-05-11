@@ -1,16 +1,12 @@
 #pragma once
 
 #include <limits>
-#include <functional>
 
 #include <boost/range.hpp>
-#include <boost/range/irange.hpp>
-#include <boost/range/algorithm.hpp>
-#include <boost/range/combine.hpp>
 
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/adaptor/adjacent_filtered.hpp>
-//#include <boost/range/adaptors.hpp>
+//#include <boost/range/adaptors.hpp>       // somehow gives a link error?
 
 #include "linalg.cpp"
 #include "ndarray.cpp"
@@ -32,8 +28,7 @@ fits snugly in L1 cache
 the only way to make this faster would be to actively reorder the input points, to exploit temporal coherency in the lexsort
 */
 
-typedef int3 cell_type;
-
+template<typename cell_type>
 class VertexGridHash {
     /*
     this datastructure allows for coarse/braod collision queries
@@ -47,33 +42,30 @@ public:
 	const float lengthscale;//size of a virtual voxel, which equals the maximum interaction range of a vertex-vertex pair query
 
 protected:
-	float3 pmin, pmax;	    //maximum extent of pointcloud; used to map coordinates to positive integers
-	const int3 size;	    //number of virtual buckets in each direction; used to prevent out-of-bound lookup
+    const float23 extents;  //maximum extent of pointcloud; used to map coordinates to positive integers
+	const cell_type size;   //number of virtual buckets in each direction; used to prevent out-of-bound lookup
 
 	const ndarray<1, cell_type> cell_id;	        //the cell coordinates a vertex resides in
 	const ndarray<1, int      > indices;	        //index array mapping the vertices to lexographically sorted order
-	int_1 pivots;		    //boundaries between buckets in vertices as viewed under indices
+	ndarray<1, int      >       pivots;		    //boundaries between buckets in vertices as viewed under indices
 	const int n_cells;	    //number of cells
 
-	const HashMap<cell_type, int> cell_map; // maps int3 cell coordinates to bucket index
+	const HashMap<cell_type, int> cell_map; // maps cell coordinates to bucket index
 
 public:
 	//interface methods
-//	float_2 get_position() const {return this->position;}
-//	void set_position(float_2 position){this->position = position;}
-//	int_2 get_cell_id() const {return this->cell_id;}
-//	void set_cell_id(int_2 cell_id){this->cell_id = cell_id;}
-	int_1 get_indices() const {return this->indices;}
-	void set_indices(int_1 indices){}
-	int_1 get_pivots() const {return this->pivots;}
-	void set_pivots(int_1 pivots){this->pivots = pivots;}
+	ndarray<1, int> get_indices() const {return this->indices;}
+	void set_indices(ndarray<1, int> indices) {int a=3;}
+	ndarray<1, int> get_pivots() const {return this->pivots;}
+	void set_pivots(ndarray<1, int> pivots){this->pivots = pivots;}
 
-
-	explicit VertexGridHash(const float_2 position, const float lengthscale):
+    // grid constructor
+	explicit VertexGridHash(const ndarray<2, float> position, const float lengthscale):
 		position(position.view<float3>()),
 		n_vertices(position.size()),
 		lengthscale(lengthscale),
-		size(measure()),
+		extents(measure()),
+		size(transform(extents.row(1) - extents.row(0)).cast<int>() + 1),
 		cell_id(compute_cells()),
 		indices(indexing()),
 		pivots({n_vertices+1}),
@@ -89,37 +81,40 @@ public:
 protected:
 	//map a global coord into the grid local coords
 	inline float3 transform(const float3& v) const {
-		return (v - pmin) / lengthscale;
+		return (v - extents.row(0)) / lengthscale;
 	}
-	inline int3 cell_from_local_position(const float3& v) const {
+	inline cell_type cell_from_local_position(const float3& v) const {
 		return (v - 0.5).cast<int>();	// defacto floor
 	}
-	inline int3 cell_from_position(const float3& v) const {
+	inline cell_type cell_from_position(const float3& v) const {
 		return cell_from_local_position(transform(v));
 	}
 	//convert bucket index into cell coords
-	int3 cell_from_index(const int b) const {
+	cell_type cell_from_index(const int b) const {
 		return cell_id[indices[pivots[b]]];
 	}
 
 
 	//determine extents of data, return size
-	int3 measure()
+	float23 measure() const
 	{
-		pmin.fill(+std::numeric_limits<float>::infinity()); 
-		pmax.fill(-std::numeric_limits<float>::infinity());
+	    float23 ext;
+		ext.row(0).fill(+std::numeric_limits<float>::infinity());
+		ext.row(1).fill(-std::numeric_limits<float>::infinity());
 		for (const float3 p: position)
 		{
-			pmin = pmin.min(p);
-			pmax = pmax.max(p);
+			ext.row(0) = ext.row(0).min(p);
+			ext.row(1) = ext.row(1).max(p);
 		}
-		return transform(pmax - pmin).cast<int>() + 1;  // compute size
+		return ext;
 	}
 
+	// determine grid cells
 	ndarray<1, cell_type> compute_cells() const
 	{
-		//determine grid cells
-	    ndarray<1, cell_type> cidx({n_vertices});
+		// silly indirection, because we cannot yet allocate custom type
+	    ndarray<2, cell_type::Scalar> cidxbase({n_vertices, cell_type::SizeAtCompileTime});
+	    ndarray<1, cell_type> cidx = cidxbase.view<cell_type>();
 		for (const int v: irange(0, n_vertices))
 			cidx[v] = cell_from_position(position[v]);
 	    return cidx;
@@ -133,8 +128,8 @@ protected:
 		boost::sort(
 	        idx,
 			[&](const int l, const int r) {
-				const int3 cl = cell_id[l];
-				const int3 cr = cell_id[r];
+				const cell_type cl = cell_id[l];
+				const cell_type cr = cell_id[r];
 				return 
 					cl[0]!=cr[0] ?
 						cl[0]<cr[0]:
@@ -181,14 +176,14 @@ protected:
 	auto indices_from_bucket(const int b) const {
 		return (b == -1) ? irange(0, 0) : irange(pivots[b], pivots[b+1]);
     }
-	auto vertices_from_cell(const int3& cell) const {
+	auto vertices_from_cell(const cell_type& cell) const {
 		return indices_from_bucket(cell_map.read(cell))
 		        | transformed([&](const int i){return indices[i];});
     }
 public:
     // public traversal interface; what this class is all about
 	template <class F>
-	void for_each_vertex_in_cell(const int3& cell, const F& body) const {
+	void for_each_vertex_in_cell(const cell_type& cell, const F& body) const {
 		for (const int i: indices_from_bucket(cell_map.read(cell)))
 			body(indices[i]);
 	}
@@ -217,14 +212,14 @@ public:
 		if ((lmin.max(float3(0,0,0)) > lmax.min(size.cast<float>())).any()) return;				
 
 		//compute local cell coords; constrain to [0-size)
-		const int3 lb =  cell_from_local_position(lmin)   .max(int3(0,0,0));
-		const int3 ub = (cell_from_local_position(lmax)+1).min(size       );
+		const cell_type lb =  cell_from_local_position(lmin)   .max(cell_type(0,0,0));
+		const cell_type ub = (cell_from_local_position(lmax)+1).min(size            );
 
 		//loop over all cells that intersect with bb
 		for (const int x: irange(lb[0],ub[0]))
 			for (const int y: irange(lb[1],ub[1]))
 				for (const int z: irange(lb[2],ub[2]))
-					for (const int v: vertices_from_cell(int3(x,y,z)))
+					for (const int v: vertices_from_cell(cell_type(x,y,z)))
 						if (in_box(v))
 						    body(v);
 	}
@@ -235,10 +230,10 @@ public:
 		const auto in_box = [&](const int v)
 		{
 			const float3 vp = position[v];
-			return !((vp<gmin).any() || (vp>gmax).any());
+			return !((vp < gmin).any() || (vp > gmax).any());
 		};
 
-		if ((gmin>pmax).any() || (gmax<pmin).any()) return;
+		if ((gmin > extents.row(1)).any() || (gmax < extents.row(0)).any()) return;
 
 		for (const int v: irange(0, n_vertices))
 			if (in_box(v))
