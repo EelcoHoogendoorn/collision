@@ -142,11 +142,8 @@ protected:
 	//divide the sorted vertices into buckets, containing vertices in the same virtual voxel
 	int find_cells()
 	{
-	    indexing();
-
 		int np = 0;		//number of pivots
 		const auto add_pivot = [&](const int b) {pivots[np] = b; np += 1;};
-//		const auto _cell_id  = cell_id.view<const cell_type>();
 
 		add_pivot(0);
 
