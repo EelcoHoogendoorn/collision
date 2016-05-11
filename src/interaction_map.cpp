@@ -183,7 +183,7 @@ protected:
 	//finds the index vector that puts the vertices in a lexographically sorted order
 	void indexing()
 	{
-		const auto _position = position.range<const float3>();
+		const auto _position = position.view<const float3>();
 		const auto _cell_id  = cell_id .range<int3>();
 
 		//determine grid cells
@@ -233,8 +233,8 @@ protected:
 		    throw my_exception("every vertex is in its own cell; that cant be right, can it? lengthscale probably needs to go way up");
 
 //        int_1::extent_gen extents;
-        pivots.resize(boost::extents[np - 1]);
-		return pivots.size();
+//        pivots.view(boost::extents[np - 1]);
+		return np - 1;
 	}
 
 

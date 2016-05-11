@@ -127,7 +127,7 @@ public:
   typedef typename super::size_type        size_type;
   typedef T*                               TPtr;
 
-private:
+public:
   PyArrayObject* array;
 
   void init_from_array(PyArrayObject* a) throw() {
@@ -231,6 +231,14 @@ public:
     init_from_shape(shape);
   }
 
+  /* construct new array and dont do shit */
+  explicit numpy_boost() :
+    super(NULL, std::vector<typename super::index>(NDims, 0)),
+    array(NULL)
+  {
+  }
+
+
   void init_from_shape(npy_intp* shape)
   {
     PyArrayObject* a;
@@ -258,8 +266,7 @@ public:
 
   /* Return the underlying Numpy array object.  [Borrowed
      reference] */
-  PyObject*
-  py_ptr() const throw() {
+  PyObject* py_ptr() const throw() {
     return (PyObject*)array;
   }
 
@@ -270,6 +277,44 @@ public:
     auto start = (VT*)origin();
     auto end = start + size();
     return boost::make_iterator_range(start, end);
+  }
+
+  template<class BT>
+  void init_view(const BT& base)
+  {
+
+    array = base.array;
+
+    base_ = (T**)base.base_;
+
+    storage_ = boost::c_storage_order();
+
+    // drop last item from strides and shape
+    for (size_t i = 0; i < NDims-1; ++i)
+    {
+      extent_list_[i] = base.extent_list_[i];
+      stride_list_[i] = base.stride_list_[i] * (sizeof(VT) / sizeof(T));
+    }
+
+    std::fill_n(index_base_list_.begin(), NDims-1, 0);
+
+    origin_offset_ = 0;
+    directional_offset_ = 0;
+
+    num_elements_ = std::accumulate(extent_list_.begin(),
+                                    extent_list_.end(),
+                                    size_type(1),
+                                    std::multiplies<size_type>());
+  }
+
+  /* view last axis as type*/
+  template<class VT>
+  auto view()
+  {
+    typedef numpy_boost<VT, NDims-1> viewtype;
+    viewtype _view;
+    _view.init_view(*this);
+    return _view;
   }
 };
 
