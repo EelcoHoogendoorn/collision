@@ -3,20 +3,14 @@
 #include <limits>
 #include <functional>
 
-#include <boost/shared_ptr.hpp>
-
 #include <boost/range.hpp>
 #include <boost/range/irange.hpp>
 #include <boost/range/algorithm.hpp>
-#include <boost/range/any_range.hpp>
 #include <boost/range/combine.hpp>
 
-#include <boost/iterator.hpp>
-#include <boost/iterator/permutation_iterator.hpp>
-#include <boost/iterator/transform_iterator.hpp>
-#include <boost/iterator/zip_iterator.hpp>
 #include <boost/range/adaptor/transformed.hpp>
-#include <boost/range/adaptors.hpp>
+#include <boost/range/adaptor/adjacent_filtered.hpp>
+//#include <boost/range/adaptors.hpp>
 
 #include "linalg.cpp"
 #include "ndarray.cpp"
@@ -86,7 +80,7 @@ public:
 	{
 		//mark grid as unoccupied
 		fill(values, -1);
-        for (auto pair : boost::combine(ikeys, ivalues))
+        for (const auto pair : boost::combine(ikeys, ivalues))
             write(boost::get<0>(pair), boost::get<1>(pair));
 	}
 
@@ -140,7 +134,7 @@ public:
 	void set_pivots(int_1 pivots){this->pivots = pivots;}
 
 
-	explicit VertexGridHash(float_2 position, float lengthscale):
+	explicit VertexGridHash(const float_2 position, const float lengthscale):
 		position(position),
 		n_vertices(position.size()),
 		lengthscale(lengthscale),
@@ -159,23 +153,18 @@ public:
 
 protected:
 	//map a global coord into the grid local coords
-	inline float3 transform(const float3& v) const
-	{
+	inline float3 transform(const float3& v) const {
 		return (v - pmin) / lengthscale;
 	}
-	inline int3 cell_from_local_position(const float3& v) const
-	{
+	inline int3 cell_from_local_position(const float3& v) const {
 		return (v - 0.5).cast<int>();	// defacto floor
 	}
-	inline int3 cell_from_position(const float3& v) const
-	{
+	inline int3 cell_from_position(const float3& v) const {
 		return cell_from_local_position(transform(v));
 	}
 	//convert bucket index into cell coords
-	int3 cell_from_index(const int b) const
-	{
-		const auto _cell_id  = cell_id.range<const int3>();
-		return _cell_id[indices[pivots[b]]];
+	int3 cell_from_index(const int b) const {
+		return cell_id.range<const int3>()[indices[pivots[b]]];
 	}
 
 
@@ -202,7 +191,7 @@ protected:
 			_cell_id[v] = cell_from_position(_position[v]);
 
 		//create index array, based on lexographical ordering
-		boost::copy(boost::irange(0, n_vertices), indices.begin());
+		boost::copy(irange(0, n_vertices), indices.begin());
 		boost::sort(
 	        indices.range<int>(),
 			[&](const int l, const int r) {
@@ -232,11 +221,8 @@ protected:
 //                    | indexed(1)
 //                    | adjacent_filtered([](auto a, auto b){return (a.value() != b.value()).any();})
 //                    | transformed([](auto i){return i.index();});
-
-//        auto res = irange(0, 10);
 //        for (const int i : res)
 //			add_pivot(i);
-
 
 		for (const int i: irange(1, n_vertices))
 			if ((_cell_id[indices[i]] != _cell_id[indices[i-1]]).any())		//if different from the previous one in sorted space
@@ -246,7 +232,9 @@ protected:
 		if (np == n_vertices)
 		    throw my_exception("every vertex is in its own cell; that cant be right, can it? lengthscale probably needs to go way up");
 
-		return np - 1;
+//        int_1::extent_gen extents;
+        pivots.resize(boost::extents[np - 1]);
+		return pivots.size();
 	}
 
 

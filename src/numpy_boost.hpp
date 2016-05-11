@@ -37,13 +37,14 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define __NUMPY_BOOST_HPP__
 
 #include <initializer_list>
-#include <boost/python.hpp>
-#include <numpy/arrayobject.h>
-#include <boost/multi_array.hpp>
-#include <boost/cstdint.hpp>
 #include <complex>
 #include <algorithm>
 #include <array>
+
+#include <numpy/arrayobject.h>
+#include <boost/python.hpp>
+#include <boost/multi_array.hpp>
+#include <boost/cstdint.hpp>
 
 /* numpy_type_map<T>
 
@@ -262,6 +263,7 @@ public:
     return (PyObject*)array;
   }
 
+  /* view as range of the given type T */
   template<class VT>
   auto range() const
   {

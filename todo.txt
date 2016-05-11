@@ -1,0 +1,7 @@
+allow creation of const views on ndarrays; they are currently array_refs
+
+work internally with typed arrays as much as possible; only cast to shaped arrays for numpy interaction
+
+update collisioninfo with all modern conveniences
+
+merge this into trianglemesh? colinfo should come from trianglemesh
