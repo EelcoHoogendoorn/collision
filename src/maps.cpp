@@ -22,16 +22,16 @@ const int3 primes(73856093, 19349663, 83492791);
 template<typename key_type, typename value_type>
 class HashMap {
 
-	const int n_entries;            //number of entries in hashmap
-	int_2 keys;      //voxel coordinates uniquely identifying a bucket
-	int_1 values;	 //bucket description, or where to look in pivot array
+	const int n_entries;                    //number of entries in hashmap
+	ndarray<2, int>          keys;      //voxel coordinates uniquely identifying a bucket; why does key_type::scalar not work?
+	ndarray<1, value_type>   values;    //bucket description, or where to look in pivot array
 //    typedef std::tuple<int3, int> entry_type;
 //    const numpy_boost<entry_type, 1> entries;
 
 public:
     // construct by zipping keys and values range
     template<class K, class V>
-	HashMap(K ikeys, V ivalues):
+	HashMap(const K& ikeys, const V& ivalues):
 	    n_entries(calc_entries(boost::distance(ivalues))),
 		keys({n_entries, 3}),
 		values({n_entries})
