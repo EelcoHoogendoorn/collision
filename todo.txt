@@ -1,3 +1,5 @@
+constructing empty array of novel type currently fails on incomplete typemap
+
 allow creation of const views on ndarrays; they are currently array_refs
 
 work internally with typed arrays as much as possible; only cast to shaped arrays for numpy interaction
