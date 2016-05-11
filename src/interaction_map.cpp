@@ -58,7 +58,7 @@ class HashMap {
 
 	inline void write(const int3& key, const int value)
 	{
-		const auto _keys = keys.range<int3>();
+		auto _keys = keys.view<int3>();
 		int entry = get_hash(key);				//get entry initial guess
 		// find an empty entry
 		while (true)
@@ -86,7 +86,7 @@ public:
 
 	inline int read(const int3& key) const
 	{
-		const auto _keys  = keys.range<const int3>();
+		const auto _keys  = keys.view<const int3>();
 		int entry = get_hash(key);			//hash guess
 
 		while (true)						//find the right entry
@@ -164,7 +164,7 @@ protected:
 	}
 	//convert bucket index into cell coords
 	int3 cell_from_index(const int b) const {
-		return cell_id.range<const int3>()[indices[pivots[b]]];
+		return cell_id.view<const int3>()[indices[pivots[b]]];
 	}
 
 
@@ -173,7 +173,7 @@ protected:
 	{
 		pmin.fill(+std::numeric_limits<float>::infinity()); 
 		pmax.fill(-std::numeric_limits<float>::infinity());
-		for (const float3 p: position.range<const float3>())
+		for (const float3 p: position.view<const float3>())
 		{
 			pmin = pmin.min(p);
 			pmax = pmax.max(p);
@@ -184,7 +184,7 @@ protected:
 	void indexing()
 	{
 		const auto _position = position.view<const float3>();
-		const auto _cell_id  = cell_id .range<int3>();
+		auto _cell_id  = cell_id .view<int3>();
 
 		//determine grid cells
 		for (const int v: irange(0, n_vertices))
@@ -193,7 +193,7 @@ protected:
 		//create index array, based on lexographical ordering
 		boost::copy(irange(0, n_vertices), indices.begin());
 		boost::sort(
-	        indices.range<int>(),
+	        indices,
 			[&](const int l, const int r) {
 				const int3 cl = _cell_id[l];
 				const int3 cr = _cell_id[r];
@@ -212,7 +212,7 @@ protected:
 
 		int np = 0;		//number of pivots
 		const auto add_pivot = [&](const int b) {pivots[np] = b; np += 1;};
-		const auto _cell_id  = cell_id.range<const int3>();
+		const auto _cell_id  = cell_id.view<const int3>();
 
 		add_pivot(0);
 
@@ -230,7 +230,7 @@ protected:
 		add_pivot(n_vertices);
 
 		if (np == n_vertices)
-		    throw my_exception("every vertex is in its own cell; that cant be right, can it? lengthscale probably needs to go way up");
+		    throw python_exception("every vertex is in its own cell; that cant be right, can it? lengthscale probably needs to go way up");
 
 //        int_1::extent_gen extents;
 //        pivots.view(boost::extents[np - 1]);
@@ -265,7 +265,7 @@ public:
 	template <class F>
 	void for_each_vertex_in_bounding_box(const float3& gmin, const float3& gmax, const F& body) const
 	{
-		const auto _position = position.range<const float3>();
+		const auto _position = position.view<const float3>();
 		const auto in_box = [&](const int v)
 		{
 			const float3 vp = _position[v];
@@ -294,7 +294,7 @@ public:
 	template <class F>
 	void for_each_vertex_in_bounding_box_naive(const float3& gmin, const float3& gmax, const F& body) const
 	{
-		const auto _position = position.range<const float3>();
+		const auto _position = position.view<const float3>();
 		const auto in_box = [&](const int v)
 		{
 			const float3 vp = _position[v];

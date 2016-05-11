@@ -20,21 +20,3 @@ enum Action
       Overwrite,
       Store
    };
-
-
-
-#include <boost/python/exception_translator.hpp>
-#include <exception>
-
-struct my_exception : std::exception
-{
-	std::string s;
-	my_exception(std::string ss) : s(ss) {}
-	const char* what() const throw() { return s.c_str(); }
-};
-
-void translate(my_exception const& e)
-{
-    // Use the Python 'C' API to set up an exception object
-    PyErr_SetString(PyExc_RuntimeError, e.what());
-}

@@ -250,7 +250,7 @@ public:
 					naive,
 					std::ostream_iterator<int>(std::cout, ","));
 
-				throw my_exception("bug in triangle iteration detected!");
+				throw python_exception("bug in triangle iteration detected!");
 			}
 		}
 	}

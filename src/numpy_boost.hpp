@@ -47,6 +47,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/multi_array.hpp>
 #include <boost/cstdint.hpp>
 
+#include "exception.cpp"
+
 /* numpy_type_map<T>
 
    Provides a mapping from C++ datatypes to Numpy type
@@ -100,10 +102,6 @@ namespace detail {
   template<>
   const int numpy_type_map<boost::uint64_t>::typenum = NPY_UINT64;
 }
-
-class python_exception : public std::exception {
-
-};
 
 /* An array that acts like a boost::multi_array, but is backed by the
    memory of a Numpy array.  Provides nice C++ interface to a Numpy
@@ -286,7 +284,7 @@ public:
   template<class VT>
   const auto view() const
   {
-     umpy_boost<VT, NDims-1> _view;
+    numpy_boost<VT, NDims-1> _view;
     _view.init_view(*this);
     return _view;
   }
