@@ -41,6 +41,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <algorithm>
 #include <array>
 
+#include <python.h>
 #include <numpy/arrayobject.h>
 #include <boost/python.hpp>
 #include <boost/multi_array.hpp>
@@ -270,33 +271,53 @@ public:
     return (PyObject*)array;
   }
 
-  /* view as range of the given type T */
-  template<class VT>
-  auto range() const
+  /* view as range of the given viewtype VT; change to cast to range without typechange? */
+  const auto range() const
   {
-    auto start = (VT*)origin();
-    auto end = start + size();
-    return boost::make_iterator_range(start, end);
+    return boost::make_iterator_range(data(), data()+size());
+  }
+  auto range()
+  {
+    return boost::make_iterator_range(data(), data()+size());
+  }
+
+
+  /* view last axis as type*/
+  template<class VT>
+  const auto view() const
+  {
+     umpy_boost<VT, NDims-1> _view;
+    _view.init_view(*this);
+    return _view;
+  }
+  template<class VT>
+  auto view()
+  {
+    numpy_boost<VT, NDims-1> _view;
+    _view.init_view(*this);
+    return _view;
   }
 
   template<class BT>
   void init_view(const BT& base)
   {
-
     array = base.array;
+    Py_INCREF(array);
 
-    base_ = (T**)base.base_;
+    super::base_ = (TPtr)base.data();
 
     storage_ = boost::c_storage_order();
 
+    const int ratio = sizeof(element) / sizeof(BT::element);
+    if (base.strides()[NDims-1] != ratio)
+        throw python_exception("Cannot view the last axis as the given type");
     // drop last item from strides and shape
-    for (size_t i = 0; i < NDims-1; ++i)
+    for (size_t i = 0; i < NDims; ++i)
     {
-      extent_list_[i] = base.extent_list_[i];
-      stride_list_[i] = base.stride_list_[i] * (sizeof(VT) / sizeof(T));
+      extent_list_[i] = base.shape()[i];
+      stride_list_[i] = base.strides()[i] / ratio;
     }
-
-    std::fill_n(index_base_list_.begin(), NDims-1, 0);
+    std::fill_n(index_base_list_.begin(), NDims, 0);
 
     origin_offset_ = 0;
     directional_offset_ = 0;
@@ -307,15 +328,6 @@ public:
                                     std::multiplies<size_type>());
   }
 
-  /* view last axis as type*/
-  template<class VT>
-  auto view()
-  {
-    typedef numpy_boost<VT, NDims-1> viewtype;
-    viewtype _view;
-    _view.init_view(*this);
-    return _view;
-  }
 };
 
 #endif
