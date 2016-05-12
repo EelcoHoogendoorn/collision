@@ -17,8 +17,8 @@ typedef uint32_t uint32;
 
 
 enum Action
-   {
-      Ignore,
-      Overwrite,
-      Store
-   };
+{
+    Ignore,
+    Overwrite,
+    Store
+};

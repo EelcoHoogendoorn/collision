@@ -8,7 +8,6 @@ boost python interface definition
 #include "interaction_map.cpp"
 #include "typedefs.cpp"
 
-//typedef VertexGridHash<int16, float32, 3> Grid;
 
 typedef VertexGridHash<int16, float32, 3> Grid;
 

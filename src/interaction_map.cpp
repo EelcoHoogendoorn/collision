@@ -3,6 +3,7 @@
 #include <limits>
 #include <iostream>
 #include <functional>
+#include <algorithm>
 
 #include <boost/range.hpp>
 
@@ -50,10 +51,10 @@ public:
 	const float lengthscale;                    // size of a virtual voxel
 	const index_type n_points;
 
-protected:
     const extents_type extents;                 // maximum extent of pointcloud; used to map coordinates to positive integers
 	const cell_type size;                       // number of virtual buckets in each direction; used to prevent out-of-bound lookup
 
+protected:
 	const ndarray<1, const cell_type> cell_id;	// the cell coordinates a vertex resides in
 	const ndarray<1,       index_type> indices;	// index array mapping the vertices to lexographically sorted order
 	      ndarray<1,       index_type> pivots;	// boundaries between buckets in vertices as viewed under indices
@@ -87,23 +88,7 @@ public:
 	    // empty constructor; noice
 	}
 
-protected:
-	//map a global coord into the grid local coords
-	inline const vector_type transform(const vector_type& v) const {
-		return (v - extents.row(0)) / lengthscale;
-	}
-	inline const cell_type cell_from_local_position(const vector_type& v) const {
-		return (v - 0.5).cast<cell_type_scalar>();	// defacto floor
-	}
-	inline const cell_type cell_from_position(const vector_type& v) const {
-		return cell_from_local_position(transform(v));
-	}
-	//convert bucket index into cell coords
-	inline const cell_type cell_from_bucket(index_type b) const {
-		return cell_id[indices[pivots[b]]];
-	}
-
-
+private:
 	//determine extents of data, return size
 	const extents_type init_extents() const
 	{
@@ -130,7 +115,6 @@ protected:
 	    ndarray<1, cell_type> cidx = cidxbase.view<cell_type>();
 		for (auto v: irange(0, n_points))
 			cidx[v] = cell_from_position(position[v]);
-//		std::cout << "last line of init_cells" << std::endl;
 	    return cidxbase.view<const cell_type>();
 	}
 	//finds the index vector that puts the vertices in a lexographically sorted order
@@ -139,7 +123,16 @@ protected:
 		//create index array, based on lexographical ordering
 	    ndarray<1, index_type> idx({n_points});
 		boost::copy(irange(0, n_points), idx.begin());
-		boost::sort(idx, [&](auto l, auto r) {return (cell_id[l] < cell_id[r]).redux(std::logical_or<bool>());});
+        auto lex = [&](index_type l, index_type r) -> bool 
+		{
+            auto cl = cell_id[l]; auto cr = cell_id[r]
+            return std::lexicographical_compare(
+                cl.data(),cl.data()+cl.size(),
+                cr.data(),cr.data()+cr.size());
+        };
+        //auto lex = [&](auto l, auto r) {
+        //    return (cell_id[l] < cell_id[r]).redux(std::logical_or<bool>());};
+		boost::sort(idx, lex);
 		return idx;//.view<index_type>();
 	}
 	//divide the sorted vertices into buckets, containing vertices in the same virtual voxel
@@ -168,6 +161,22 @@ protected:
 		return np - 1;
 	}
 
+
+protected:
+	//map a global coord into the grid local coords
+	inline const vector_type transform(const vector_type& v) const {
+		return (v - extents.row(0)) / lengthscale;
+	}
+	inline const cell_type cell_from_local_position(const vector_type& v) const {
+		return (v - 0.5).cast<cell_type_scalar>();	// defacto floor
+	}
+	inline const cell_type cell_from_position(const vector_type& v) const {
+		return cell_from_local_position(transform(v));
+	}
+	//convert bucket index into cell coords
+	inline const cell_type cell_from_bucket(index_type b) const {
+		return cell_id[indices[pivots[b]]];
+	}
 
 protected:
 	auto indices_from_bucket(index_type b) const {
