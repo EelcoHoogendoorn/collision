@@ -38,4 +38,7 @@ cmake --build . --clean-first --target ALL_BUILD --config %BUILD_CONFIG%
 
 cd..
 
+
 copy .\build\release\Collision.pyd .\collision
+
+python .\collision\test.py

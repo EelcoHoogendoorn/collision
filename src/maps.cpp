@@ -76,6 +76,7 @@ private:
 	inline int get_hash(const key_type& key) const
 	{
 		const int3 c = key.cast<int>() * primes;
+		return c.redux(std::bit_xor<int>()) & (n_entries - 1);
 	}
 
 	int calc_entries() const
