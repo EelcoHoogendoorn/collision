@@ -183,6 +183,48 @@ public:
                                            std::multiplies<size_type>());
   }
 
+  template<class BT>
+  void init_view(const BT& base)
+  {
+    array = base.array;
+    Py_INCREF(array);
+
+    super::base_ = (TPtr)base.data();
+
+    storage_ = boost::c_storage_order();
+
+    const int ratio = sizeof(element) / sizeof(BT::element);
+    if (base.strides()[NDims-1] != ratio)
+        throw python_exception("Cannot view the last axis as the given type");
+    // drop last item from strides and shape
+    for (size_t i = 0; i < NDims; ++i)
+    {
+      extent_list_[i] = base.shape()[i];
+      stride_list_[i] = base.strides()[i] / ratio;
+    }
+    std::fill_n(index_base_list_.begin(), NDims, 0);
+
+    origin_offset_ = 0;
+    directional_offset_ = 0;
+
+    num_elements_ = std::accumulate(extent_list_.begin(),
+                                    extent_list_.end(),
+                                    size_type(1),
+                                    std::multiplies<size_type>());
+  }
+
+  /* create empty array of the given shape */
+  void init_from_shape(npy_intp* shape)
+  {
+    PyArrayObject* a;
+    a = (PyArrayObject*)PyArray_SimpleNew(
+        NDims, shape, ::detail::numpy_type_map<T>::typenum);
+    if (a == NULL) {
+      throw boost::python::error_already_set();
+    }
+    init_from_array(a);
+  }
+
 public:
   /* Construct from an existing Numpy array */
   numpy_boost(PyObject* obj) :
@@ -230,25 +272,12 @@ public:
     init_from_shape(shape);
   }
 
-  /* construct new array and dont do shit */
+  /* construct new array and dont do anything */
   explicit numpy_boost() :
     super(NULL, std::vector<typename super::index>(NDims, 0)),
     array(NULL)
   {
   }
-
-
-  void init_from_shape(npy_intp* shape)
-  {
-    PyArrayObject* a;
-    a = (PyArrayObject*)PyArray_SimpleNew(
-        NDims, shape, ::detail::numpy_type_map<T>::typenum);
-    if (a == NULL) {
-      throw boost::python::error_already_set();
-    }
-    init_from_array(a);
-  }
-
 
   /* Destructor */
   ~numpy_boost() {
@@ -263,13 +292,12 @@ public:
     init_from_array(other.array);
   }
 
-  /* Return the underlying Numpy array object.  [Borrowed
-     reference] */
+  /* Return the underlying Numpy array object.  [Borrowed reference] */
   PyObject* py_ptr() const throw() {
     return (PyObject*)array;
   }
 
-  /* view as range of the given viewtype VT; change to cast to range without typechange? */
+  /* view as range of the given viewtype VT; add asserts? */
   const auto range() const
   {
     return boost::make_iterator_range(data(), data()+size());
@@ -278,7 +306,6 @@ public:
   {
     return boost::make_iterator_range(data(), data()+size());
   }
-
 
   /* view last axis as type*/
   template<class VT>
@@ -295,37 +322,6 @@ public:
     _view.init_view(*this);
     return _view;
   }
-
-  template<class BT>
-  void init_view(const BT& base)
-  {
-    array = base.array;
-    Py_INCREF(array);
-
-    super::base_ = (TPtr)base.data();
-
-    storage_ = boost::c_storage_order();
-
-    const int ratio = sizeof(element) / sizeof(BT::element);
-    if (base.strides()[NDims-1] != ratio)
-        throw python_exception("Cannot view the last axis as the given type");
-    // drop last item from strides and shape
-    for (size_t i = 0; i < NDims; ++i)
-    {
-      extent_list_[i] = base.shape()[i];
-      stride_list_[i] = base.strides()[i] / ratio;
-    }
-    std::fill_n(index_base_list_.begin(), NDims, 0);
-
-    origin_offset_ = 0;
-    directional_offset_ = 0;
-
-    num_elements_ = std::accumulate(extent_list_.begin(),
-                                    extent_list_.end(),
-                                    size_type(1),
-                                    std::multiplies<size_type>());
-  }
-
 };
 
 #endif

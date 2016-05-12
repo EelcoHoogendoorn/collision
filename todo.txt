@@ -1,4 +1,4 @@
-work internally with typed arrays as much as possible; only cast to shaped arrays for numpy interaction
+add cast back to numpy types
 constructing empty array of novel type currently fails on incomplete typemap
 
 strive for pure functions; keep mutable state in local scope

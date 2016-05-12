@@ -22,8 +22,6 @@ BOOST_PYTHON_MODULE(Collision)
 
 
 	class_<Grid>("VertexGridHash", init<ndarray<2, float>, float>())
-//		.add_property(
-//		"cell_id", &Grid::get_cell_id, &Grid::set_cell_id)
 		.add_property(
 		"indices", &Grid::get_indices, &Grid::set_indices)
 		.add_property(
