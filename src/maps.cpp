@@ -19,6 +19,7 @@ using namespace boost::adaptors;
 const int3 primes(73856093, 19349663, 83492791);
 
 
+template<class key_type, class value_type>
 class HashMap {
 
     typedef int16 key_type_scalar;
