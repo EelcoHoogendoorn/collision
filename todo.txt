@@ -2,6 +2,8 @@ add cast back to numpy types
 constructing empty array of novel type currently fails on incomplete typemap
 
 strive for pure functions; keep mutable state in local scope
+not a holy grail though; hashmap is sufficient immutable as is
+only unhappy with pivots now
 
 allow creation of const views on ndarrays; they are currently array_refs
 

@@ -16,3 +16,10 @@ typedef Eigen::Array<int,1,3>   int3;		//used as intvec and index tuple
 typedef Eigen::Array<float,3,3> float33;	//used for triangle geometry computations
 typedef Eigen::Array<float,2,3> float23;	//min/max extents
 //typedef Eigen::Array<float,3,2> float32;	//min/max extents
+
+
+//template <int C, typename T>
+//using RowArray = Eigen::Array<T, 1, C>;
+
+//template <int R, int C, typename T>
+//using Array = Eigen::Array<T, R, C>;

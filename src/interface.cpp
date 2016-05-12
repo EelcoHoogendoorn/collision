@@ -4,8 +4,9 @@ boost python interface definition
 
 #include "exception.cpp"
 #include "interaction_map.cpp"
+#include "typedefs.cpp"
 
-typedef VertexGridHash<int3> Grid;
+typedef VertexGridHash<int16, float32, 3> Grid;
 
 
 using namespace boost::python;
@@ -14,10 +15,12 @@ BOOST_PYTHON_MODULE(Collision)
 	//initialize numpy support
 	init_numpy();
 	//register array types employed; needed to avoid runtime error
-	numpy_boost_python_register_type<int, 1>();
-	numpy_boost_python_register_type<int, 2>();
-	numpy_boost_python_register_type<float, 1>();
-	numpy_boost_python_register_type<float, 2>();
+	numpy_boost_python_register_type<int16, 1>();
+	numpy_boost_python_register_type<int16, 2>();
+	numpy_boost_python_register_type<int32, 1>();
+	numpy_boost_python_register_type<int32, 2>();
+	numpy_boost_python_register_type<float32, 1>();
+	numpy_boost_python_register_type<float32, 2>();
 //	numpy_boost_python_register_type<int3, 1>();
 
 

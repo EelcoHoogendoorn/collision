@@ -19,20 +19,21 @@ using namespace boost::adaptors;
 const int3 primes(73856093, 19349663, 83492791);
 
 
-template<typename key_type, typename value_type>
 class HashMap {
 
-	const int n_entries;                    //number of entries in hashmap
-	ndarray<2, int>          keys;      //voxel coordinates uniquely identifying a bucket; why does key_type::scalar not work?
-	ndarray<1, value_type>   values;    //bucket description, or where to look in pivot array
-//    typedef std::tuple<int3, int> entry_type;
-//    const numpy_boost<entry_type, 1> entries;
+    typedef int16 key_type_scalar;
+
+    const int n_items;                  // number of items
+	const int n_entries;                // number of entries
+	ndarray<2, key_type_scalar> keys;   // voxel coordinates uniquely identifying a bucket
+	ndarray<1, value_type>      values; // bucket description, or where to look in pivot array
 
 public:
     // construct by zipping keys and values range
     template<class K, class V>
-	HashMap(const K& ikeys, const V& ivalues):
-	    n_entries(calc_entries(boost::distance(ivalues))),
+	HashMap(const K ikeys, const V ivalues):
+	    n_items(boost::distance(ivalues)),
+	    n_entries(calc_entries()),
 		keys({n_entries, 3}),
 		values({n_entries})
 	{
@@ -42,7 +43,7 @@ public:
             write(boost::get<0>(pair), boost::get<1>(pair));
 	}
 
-	inline int read(const key_type& key) const
+	inline const value_type operator[](const key_type& key) const
 	{
 	    const auto _keys = keys.view<const key_type>();
 		int entry = get_hash(key);			//hash guess
@@ -75,12 +76,11 @@ private:
 		return (c[0]^c[1]^c[2]) & (n_entries - 1);
 	}
 
-	static int calc_entries(const int size)
+	int calc_entries() const
 	{
-		//calc number of entries in hashmap. hashmap should have twice the number of buckets, at mimimum.
-		//absolute size is proportional to the number of vertices in the dataset, not to the space they occupy
+		//calc number of entries in hashmap. hashmap should have twice the number of items, at mimimum.
 		int entries = 64;
-		while (entries < size * 2) entries <<= 1;
+		while (entries < n_items * 2) entries <<= 1;
 		return entries;
 	}
 };
