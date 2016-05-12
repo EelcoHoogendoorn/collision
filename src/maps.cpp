@@ -12,17 +12,19 @@
 #include "linalg.cpp"
 
 using namespace boost;
-using namespace boost::adaptors;
 
 
 //used for hashing calcs
 const int3 primes(73856093, 19349663, 83492791);
 
 
-template<class key_type, class value_type>
+template<class key_type, class value_type, int NDim>
 class HashMap {
 
-    typedef int16 key_type_scalar;
+//	typedef key_type key_type;
+
+//    typedef int32 key_type_scalar;
+	typename typedef key_type::Scalar key_type_scalar;
 
     const int n_items;                  // number of items
 	const int n_entries;                // number of entries
@@ -35,7 +37,7 @@ public:
 	HashMap(const K ikeys, const V ivalues):
 	    n_items(boost::distance(ivalues)),
 	    n_entries(calc_entries()),
-		keys({n_entries, 3}),
+		keys({n_entries, NDim}),
 		values({n_entries})
 	{
 		//mark grid as unoccupied
@@ -73,8 +75,7 @@ private:
 
 	inline int get_hash(const key_type& key) const
 	{
-		const key_type c = key * primes;
-		return (c[0]^c[1]^c[2]) & (n_entries - 1);
+		const int3 c = key.cast<int>() * primes;
 	}
 
 	int calc_entries() const

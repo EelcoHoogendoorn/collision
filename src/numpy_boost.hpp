@@ -40,6 +40,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <complex>
 #include <algorithm>
 #include <array>
+#include <iostream>
 
 #include <python.h>
 #include <numpy/arrayobject.h>
@@ -194,9 +195,10 @@ public:
     storage_ = boost::c_storage_order();
 
     const int ratio = sizeof(element) / sizeof(BT::element);
+
     if (base.strides()[NDims-1] != ratio)
         throw python_exception("Cannot view the last axis as the given type");
-    // drop last item from strides and shape
+
     for (size_t i = 0; i < NDims; ++i)
     {
       extent_list_[i] = base.shape()[i];
@@ -307,7 +309,7 @@ public:
     return boost::make_iterator_range(data(), data()+size());
   }
 
-  /* view last axis as type*/
+  /* view last axis as type; need to handle three cases here; ndim is bigger, equal or smaller */
   template<class VT>
   const auto view() const
   {

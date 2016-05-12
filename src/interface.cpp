@@ -2,9 +2,13 @@
 boost python interface definition
 */
 
+#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
+
 #include "exception.cpp"
 #include "interaction_map.cpp"
 #include "typedefs.cpp"
+
+//typedef VertexGridHash<int16, float32, 3> Grid;
 
 typedef VertexGridHash<int16, float32, 3> Grid;
 
