@@ -3,15 +3,11 @@
 
 #include <functional>
 
-#include <boost/range.hpp>
-#include <boost/range/irange.hpp>
-#include <boost/range/algorithm.hpp>
-#include <boost/range/combine.hpp>
+#include <boost/tuple/tuple.hpp>
+
 
 #include "ndarray.cpp"
 #include "linalg.cpp"
-
-using namespace boost;
 
 
 //used for hashing calcs
@@ -33,17 +29,17 @@ class HashMap {
 
 public:
     // construct by zipping keys and values range
-    template<class K, class V>
-	HashMap(const K ikeys, const V ivalues):
-	    n_items(boost::distance(ivalues)),
-	    n_entries(calc_entries()),
+    template<typename items_range>
+	HashMap(const int n_items, const items_range& items):
+	    n_items(n_items),
+	    n_entries(init_entries()),
 		keys({n_entries, NDim}),
 		values({n_entries})
 	{
 		//mark grid as unoccupied
 		fill(values, -1);
-        for (const auto pair : boost::combine(ikeys, ivalues))
-            write(boost::get<0>(pair), boost::get<1>(pair));
+        for (auto item : items)
+            write(boost::get<0>(item), boost::get<1>(item));
 	}
 
 	inline const value_type operator[](const key_type& key) const
@@ -79,7 +75,7 @@ private:
 		return c.redux(std::bit_xor<int>()) & (n_entries - 1);
 	}
 
-	int calc_entries() const
+	int init_entries() const
 	{
 		//calc number of entries in hashmap. hashmap should have twice the number of items, at mimimum.
 		int entries = 64;
@@ -87,3 +83,9 @@ private:
 		return entries;
 	}
 };
+
+//// for checking if it matters anything in terms of performance
+//class StdMap : public std::map
+//{
+//
+//};

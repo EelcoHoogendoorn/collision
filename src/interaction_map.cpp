@@ -6,6 +6,9 @@
 #include <algorithm>
 
 #include <boost/range.hpp>
+#include <boost/range/irange.hpp>
+#include <boost/range/combine.hpp>
+#include <boost/range/algorithm.hpp>
 
 #include <boost/range/adaptor/indexed.hpp>
 #include <boost/range/adaptor/transformed.hpp>
@@ -86,9 +89,12 @@ public:
 		indices     (init_indices()),
 		pivots      ({n_points}),
 		n_buckets   (init_pivots()),
-		bucket_from_cell(       // create a map to invert the cell_from_bucket function
-		    irange(0, n_buckets) | transformed([&](auto b){return cell_from_bucket(b);}),
-		    irange(0, n_buckets)
+		bucket_from_cell(
+		    n_buckets,
+		    boost::combine(       // create a map to invert the cell_from_bucket function
+                irange(0, n_buckets) | transformed([&](auto b){return cell_from_bucket(b);}),
+                irange(0, n_buckets)
+		    )
 		)
 	{
 	    // empty constructor; noice
