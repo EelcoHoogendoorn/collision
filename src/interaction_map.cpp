@@ -57,7 +57,8 @@ public:
     const extents_type              extents;     // maximum extent of pointcloud; used to map coordinates to positive integers
 	const cell_type                 size;        // number of virtual buckets in each direction; used to prevent out-of-bound lookup
 
-protected:
+public:
+	ndarray<2, cell_type_scalar>   _cell_id; // the cell coordinates a vertex resides in
 	const ndarray<1, const cell_type>   cell_id; // the cell coordinates a vertex resides in
 	const ndarray<1,       index_type>  indices; // index array mapping the vertices to lexographically sorted order
 	      ndarray<1,       index_type>  pivots;	 // boundaries between buckets in vertices as viewed under indices
@@ -66,13 +67,13 @@ protected:
 
 public:
 	//interface methods
-	ndarray<2, cell_type_scalar> get_cells() {
-		std::cout << "converted array" << std::endl;
-	    auto arr = ndarray<2, cell_type_scalar>((PyObject*)&(this->cell_id.array));		// crash at this line
-	    std::cout << "converted array" << std::endl;
-	    return arr;
+	ndarray<2, cell_type_scalar> get_cell_ids() {
+		//std::cout << "converted array" << std::endl;
+	 //   auto arr = ndarray<2, cell_type_scalar>((PyObject*)&(this->cell_id.array));		// crash at this line
+	 //   std::cout << "converted array" << std::endl;
+	    return this->_cell_id;
 	}
-	void set_cells(ndarray<2, cell_type_scalar> cells) {int a=3;}
+	void set_cell_ids(ndarray<2, cell_type_scalar> cells) {int a=3;}
 	ndarray<1, index_type> get_indices() const {return this->indices;}
 	void set_indices(ndarray<1, index_type> indices) {int a=3;}
 	ndarray<1, index_type> get_pivots() const {return this->pivots;}
@@ -85,6 +86,7 @@ public:
 		lengthscale (lengthscale),
 		extents     (init_extents()),
 		size        (init_size()),
+		_cell_id    ({ n_points, NDim }),
 		cell_id     (init_cells()),
 		indices     (init_indices()),
 		pivots      ({n_points}),
@@ -120,30 +122,28 @@ private:
 	}
 
 	// determine grid cells
-	const ndarray<1, const cell_type> init_cells() const
+	ndarray<1, const cell_type> init_cells() const
 	{
 		// silly indirection, because we cannot yet allocate custom type
-	    ndarray<2, cell_type_scalar> cidxbase({n_points, NDim});
-	    ndarray<1, cell_type> cidx = cidxbase.view<cell_type>();
+	    //_cell_id = ndarray<2, cell_type_scalar>({n_points, NDim});
+	    ndarray<1, cell_type> cidx = _cell_id.view<cell_type>();
 		for (auto v: irange(0, n_points))
 			cidx[v] = cell_from_position(position[v]);
-	    return cidxbase.view<const cell_type>();
+	    return _cell_id.view<const cell_type>();
 	}
 	//finds the index vector that puts the vertices in a lexographically sorted order
-	const ndarray<1, index_type> init_indices() const
+	ndarray<1, index_type> init_indices() const
 	{
 		//create index array, based on lexographical ordering
 	    ndarray<1, index_type> idx({n_points});
 		boost::copy(irange(0, n_points), idx.begin());
-        auto lex = [&](index_type l, index_type r) -> bool	// this probably does not optimize during compilation
-		{
-			auto cl = cell_id[l]; auto cr = cell_id[r];
-            return std::lexicographical_compare(
-                cl.data(),cl.data()+NDim,
-                cr.data(),cr.data()+NDim);
-        };
-        //auto lex = [&](auto l, auto r) {
-        //    return (cell_id[l] < cell_id[r]).redux(std::logical_or<bool>());};
+
+        const Eigen::Array<int, 1, NDim> order = {4, 2, 1};
+		// take the sign of a eigen vector type per component
+		auto sign = [](auto x) {return (x > 0).cast<int>() - (x < 0).cast<int>();};
+        // lex sorting functor
+		auto lex = [&](auto l, auto r) {return (sign(cell_id[l] - cell_id[r]) * order).sum() > 0;};
+
 		boost::sort(idx, lex);
 		return idx;//.view<index_type>();
 	}
@@ -155,13 +155,20 @@ private:
 
         auto res = indices
                     | transformed([&](auto i){return cell_id[i];})
-                    | indexed(1)
+                    | indexed(0)
                     | adjacent_filtered([](auto a, auto b){return (a.value() != b.value()).any();})
                     | transformed([](auto i){return i.index();});
 
-		add_pivot(0);
+//		add_pivot(0);
         for (auto i : res)
 			add_pivot(i);
+//		for (const int i: irange(1, n_points))
+//			if ((cell_id[indices[i]] != cell_id[indices[i-1]]).any())
+//		    {
+//			    std::cout << cell_id[indices[i-1]].row(0) << std::endl;
+//				add_pivot(i);
+//			}
+		add_pivot(n_points);
 
 		if (np >= n_points)
 		    throw python_exception("every vertex is in its own cell; lengthscale probably needs to go way up");
@@ -180,7 +187,7 @@ protected:
 		return (v - extents.row(0)) / lengthscale;
 	}
 	inline const cell_type cell_from_local_position(const vector_type& v) const {
-		return (v - 0.5).cast<cell_type_scalar>();	// defacto floor
+		return (v).cast<cell_type_scalar>();	// defacto floor
 	}
 	inline const cell_type cell_from_position(const vector_type& v) const {
 		return cell_from_local_position(transform(v));

@@ -41,4 +41,4 @@ cd..
 
 copy .\build\release\Collision.pyd .\collision
 
-python .\collision\test.py
+REM python .\collision\test.py
