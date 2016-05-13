@@ -64,9 +64,8 @@ protected:
 public:
 	//interface methods
 	ndarray<2, cell_type_scalar> get_cells() {
-		    std::cout << "converted array" << std::endl;
-
-	    auto arr = ndarray<2, cell_type_scalar>((PyObject*)&(this->cell_id.array));
+		std::cout << "converted array" << std::endl;
+	    auto arr = ndarray<2, cell_type_scalar>((PyObject*)&(this->cell_id.array));		// crash at this line
 	    std::cout << "converted array" << std::endl;
 	    return arr;
 	}
@@ -111,7 +110,7 @@ private:
 	}
 
 	cell_type init_size() const {
-	    return transform(extents.row(1) - extents.row(0)).cast<cell_type_scalar>() + 1;
+	    return transform(extents.row(1) - extents.row(0)).cast<cell_type_scalar>() + 1;	// use +0.5 before cast?
 	}
 
 	// determine grid cells
@@ -130,12 +129,12 @@ private:
 		//create index array, based on lexographical ordering
 	    ndarray<1, index_type> idx({n_points});
 		boost::copy(irange(0, n_points), idx.begin());
-        auto lex = [&](index_type l, index_type r) -> bool 
+        auto lex = [&](index_type l, index_type r) -> bool	// this probably does not optimize during compilation
 		{
 			auto cl = cell_id[l]; auto cr = cell_id[r];
             return std::lexicographical_compare(
-                cl.data(),cl.data()+cl.size(),
-                cr.data(),cr.data()+cr.size());
+                cl.data(),cl.data()+NDim,
+                cr.data(),cr.data()+NDim);
         };
         //auto lex = [&](auto l, auto r) {
         //    return (cell_id[l] < cell_id[r]).redux(std::logical_or<bool>());};
