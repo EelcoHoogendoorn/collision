@@ -17,6 +17,7 @@ BOOST_PYTHON_MODULE(Collision)
 {
 	//initialize numpy support
 	init_numpy();
+	
 	//register array types employed; needed to avoid runtime error
 	numpy_boost_python_register_type<int16, 1>();
 	numpy_boost_python_register_type<int16, 2>();
