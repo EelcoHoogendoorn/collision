@@ -16,3 +16,5 @@ overload register_type for complete ndarray typedefs
 update collisioninfo with all modern conveniences
 
 merge this into trianglemesh? colinfo should come from trianglemesh
+
+add eigen::map to numpy funcs as well?

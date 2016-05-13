@@ -47,23 +47,30 @@ public:
     typedef Eigen::Array<vector_type_scalar, 1, NDim> vector_type;
     typedef Eigen::Array<cell_type_scalar,   1, NDim> cell_type;
 
-	const ndarray<1, const float3> position;    //  positions
-	const float lengthscale;                    // size of a virtual voxel
-	const index_type n_points;
+	const ndarray<1, const float3>  position;    //  positions
+	const index_type                n_points;
+	const float                     lengthscale; // size of a virtual voxel
 
-    const extents_type extents;                 // maximum extent of pointcloud; used to map coordinates to positive integers
-	const cell_type size;                       // number of virtual buckets in each direction; used to prevent out-of-bound lookup
+    const extents_type              extents;     // maximum extent of pointcloud; used to map coordinates to positive integers
+	const cell_type                 size;        // number of virtual buckets in each direction; used to prevent out-of-bound lookup
 
 protected:
-	const ndarray<1, const cell_type> cell_id;	// the cell coordinates a vertex resides in
-	const ndarray<1,       index_type> indices;	// index array mapping the vertices to lexographically sorted order
-	      ndarray<1,       index_type> pivots;	// boundaries between buckets in vertices as viewed under indices
-
-	const index_type n_buckets;	                // number of cells
+	const ndarray<1, const cell_type>   cell_id; // the cell coordinates a vertex resides in
+	const ndarray<1,       index_type>  indices; // index array mapping the vertices to lexographically sorted order
+	      ndarray<1,       index_type>  pivots;	 // boundaries between buckets in vertices as viewed under indices
+	const index_type                    n_buckets;// number of cells
 	const HashMap<cell_type, index_type, NDim> bucket_from_cell; // maps cell coordinates to bucket index
 
 public:
 	//interface methods
+	ndarray<2, cell_type_scalar> get_cells() {
+		    std::cout << "converted array" << std::endl;
+
+	    auto arr = ndarray<2, cell_type_scalar>((PyObject*)&(this->cell_id.array));
+	    std::cout << "converted array" << std::endl;
+	    return arr;
+	}
+	void set_cells(ndarray<2, cell_type_scalar> cells) {int a=3;}
 	ndarray<1, index_type> get_indices() const {return this->indices;}
 	void set_indices(ndarray<1, index_type> indices) {int a=3;}
 	ndarray<1, index_type> get_pivots() const {return this->pivots;}
@@ -125,7 +132,7 @@ private:
 		boost::copy(irange(0, n_points), idx.begin());
         auto lex = [&](index_type l, index_type r) -> bool 
 		{
-            auto cl = cell_id[l]; auto cr = cell_id[r]
+			auto cl = cell_id[l]; auto cr = cell_id[r];
             return std::lexicographical_compare(
                 cl.data(),cl.data()+cl.size(),
                 cr.data(),cr.data()+cr.size());

@@ -9,4 +9,5 @@ lengthscale = 0.5
 grid = Collision.VertexGridHash(points, lengthscale)
 print(grid.indices)
 print(grid.pivots)
+print(type(grid.cells))
 print(points.min(), points.max())
