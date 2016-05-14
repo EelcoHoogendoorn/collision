@@ -4,13 +4,16 @@ boost python interface definition
 
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 
+#include "typedefs.cpp"
 #include "exception.cpp"
 #include "interaction_map.cpp"
-#include "typedefs.cpp"
-
+#include "triangle_mesh.cpp"
 
 typedef VertexGridHash<int16, float32, 2> Grid2d;
 typedef VertexGridHash<int16, float32, 3> Grid3d;
+
+typedef TriangleMesh<float32> Mesh;
+
 
 
 using namespace boost::python;
@@ -29,7 +32,6 @@ BOOST_PYTHON_MODULE(Collision)
 
 
 	class_<Grid2d>("Grid2d", init<ndarray<float32, 2>, float32>())
-//		.add_property("cell_ids",   &Grid2d::get_cell_ids,    &Grid2d::set_cell_ids)
 		.add_property("permutation",&Grid2d::get_permutation, &Grid2d::set_permutation)
 		.add_property("pivots",     &Grid2d::get_pivots,      &Grid2d::set_pivots)
 		.def_readonly("n_buckets",  &Grid2d::n_buckets)
@@ -37,11 +39,15 @@ BOOST_PYTHON_MODULE(Collision)
 		;
 
 	class_<Grid3d>("Grid3d", init<ndarray<float32, 2>, float32>())
-//		.add_property("cell_ids",   &Grid3d::get_cell_ids,    &Grid3d::set_cell_ids)
+		.add_property("cells",      &Grid3d::get_cells,       &Grid3d::set_cells)
 		.add_property("permutation",&Grid3d::get_permutation, &Grid3d::set_permutation)
 		.add_property("pivots",     &Grid3d::get_pivots,      &Grid3d::set_pivots)
 		.def_readonly("n_buckets",  &Grid3d::n_buckets)
 //		.def("unit_test", &Grid3::unit_test)
+		;
+
+	class_<Mesh>("Mesh", init<ndarray<float32, 2>, ndarray<float32, 2>, ndarray<int32, 2>, float32>())
+		.add_property("boxes",      &Mesh::get_boxes, &Mesh::set_boxes)
 		;
 
 	register_exception_translator<python_exception>(&translate);

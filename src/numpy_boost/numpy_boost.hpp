@@ -215,6 +215,40 @@ public:
                                     std::multiplies<size_type>());
   }
 
+  template<class BT>
+  void init_unview(const BT& base)
+  {
+    array = base.array;
+    Py_INCREF(array);
+
+    super::base_ = (TPtr)base.data();
+
+    storage_ = boost::c_storage_order();
+
+    const int ratio = sizeof(BT::element) / sizeof(element);
+
+    if (ratio * sizeof(element) != sizeof(BT::element))
+        throw python_exception("Source and target dtype do not have a common denominator");
+
+    for (size_t i = 0; i < NDims-1; ++i)
+    {
+      extent_list_[i] = base.shape()[i];
+      stride_list_[i] = base.strides()[i] * ratio;
+    }
+    extent_list_[NDims-1] = ratio;
+    stride_list_[NDims-1] = 1;
+
+    std::fill_n(index_base_list_.begin(), NDims, 0);
+
+    origin_offset_ = 0;
+    directional_offset_ = 0;
+
+    num_elements_ = std::accumulate(extent_list_.begin(),
+                                    extent_list_.end(),
+                                    size_type(1),
+                                    std::multiplies<size_type>());
+  }
+
   /* create empty array of the given shape */
   void init_from_shape(npy_intp* shape)
   {
@@ -311,17 +345,18 @@ public:
 
   /* view last axis as type; need to handle three cases here; ndim is bigger, equal or smaller */
   template<class VT>
-  const auto view() const
+  auto view() const
   {
     numpy_boost<VT, NDims-1> _view;
     _view.init_view(*this);
     return _view;
   }
+
   template<class VT>
-  auto view()
+  auto unview() const
   {
-    numpy_boost<VT, NDims-1> _view;
-    _view.init_view(*this);
+    numpy_boost<VT, NDims+1> _view;
+    _view.init_unview(*this);
     return _view;
   }
 

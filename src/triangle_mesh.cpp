@@ -1,14 +1,28 @@
 #pragma once
 
 #include <limits>
+#include <iostream>
+#include <functional>
+#include <algorithm>
 
 #include <boost/range.hpp>
 #include <boost/range/irange.hpp>
+#include <boost/range/combine.hpp>
 #include <boost/range/algorithm.hpp>
-#include <boost/range/any_range.hpp>
+#include <boost/range/numeric.hpp>
 
-#include "linalg.cpp"
-#include "ndarray.cpp"
+#include <boost/range/adaptor/indexed.hpp>
+#include <boost/range/adaptor/transformed.hpp>
+#include <boost/range/adaptor/adjacent_filtered.hpp>
+//#include <boost/range/adaptors.hpp>       // somehow gives a link error?
+
+#include "typedefs.cpp"
+#include "numpy_eigen/array.cpp"
+#include "numpy_boost/ndarray.cpp"
+#include "maps.cpp"
+
+using namespace boost;
+using namespace boost::adaptors;
 
 
 /*
@@ -20,71 +34,67 @@ should we iteratively deform the mesh along its normals, implementing normal cal
 
 template <typename real_type>
 class TriangleMesh{
+
+    typedef int32 index_type;
+    typedef Eigen::Array<index_type, 1, 3> triangle_type;
+    typedef Eigen::Array<real_type,  1, 3> vector_type;
+    typedef Eigen::Array<real_type,  2, 3> box_type;
+
+	const index_type    n_triangles;
+	const index_type    n_vertices;
+	const real_type     thickness;
+
+	const ndarray<vector_type>      position;
+	const ndarray<vector_type>      normal;
+	const ndarray<triangle_type>    triangles;
+    const ndarray<box_type>         boxes;
+
 public:
-
-    typedef Eigen::Array<real_type, 2, 3> vector_type;
-    typedef Eigen::Array<real_type, 2, 3> box_type;
-
-	float_2 position;
-	float_2 normal;
-	int_2 incidence;
-
-	float_2 bbmin;
-	float_2 bbmax;
-
-	const int   triangles;
-	const int   vertices;
-	const float thickness;
-
-	TriangleMesh(float_2 position, float_2 normal, int_2 incidence, float thickness):
-		position(position), normal(normal), incidence(incidence), thickness(thickness),
-			bbmin(incidence.shape()), bbmax(incidence.shape()),
-			vertices(position.shape()[0]),
-			triangles(incidence.shape()[0])
+	explicit TriangleMesh(
+	    ndarray<real_type, 2> position,
+	    ndarray<real_type, 2> normal,
+	    ndarray<index_type, 2> triangles,
+	    real_type thickness
+	):
+		position    (position.view<vector_type>()),
+		normal      (normal.view<vector_type>()),
+		triangles   (triangles.view<triangle_type>()),
+		thickness   (thickness),
+        n_vertices  (position.size()),
+        n_triangles (triangles.size()),
+        boxes       (init_boxes())
 	{
-		boundingbox();
 	}
 
-	//compute bounding boxes for each triangle
-	void boundingbox()
+	//compute bounding box for each triangle
+	auto init_boxes() const
 	{
-		const auto _position	= position	.range<const float3>();
-		const auto _normal		= normal	.range<const float3>();
-		const auto _incidence   = incidence	.range<const int3>();
+		auto inf = std::numeric_limits<real_type>::infinity();
 
-		//could precompute a temp inner/outer array; not sure it is worthwhile tho
+        ndarray<box_type> boxes(ndarray<real_type, 2>({n_triangles, 6}).view<box_type>());
 
-		const auto _bbmin		= bbmin		.range<float3>();
-		const auto _bbmax		= bbmax		.range<float3>();
-
-		const float inf = std::numeric_limits<float>::infinity();
-		boost::fill(_bbmin, float3(+inf, +inf, +inf));
-		boost::fill(_bbmax, float3(-inf, -inf, -inf));
-
-		for (const int t: boost::irange(0, triangles))	//loop over all triangles
+		for (const int t: boost::irange(0, n_triangles))	//loop over all triangles
 		{
-			const int3 I = _incidence[t];
-			for (const int i: boost::irange(0,3))		//loop over all vertices incident to the triangle
+            box_type& box = boxes[t];
+            box.row(0).fill(+inf);
+            box.row(1).fill(-inf);
+
+			const triangle_type& triangle = triangles[t];
+			for (auto i: boost::irange(0, 3))		//loop over all vertices incident to the triangle
 			{
-				const int v = I[i];
+				auto v = triangle(i);
 
-				const float3 _i = _position[v] - _normal[v] * thickness * 2;
-				const float3 _o = _position[v] + _normal[v] * thickness * 2;
+				auto inner = position[v] - normal[v] * thickness * 2;
+				auto outer = position[v] + normal[v] * thickness * 2;
 
-				_bbmin[t] = _bbmin[t].min(_i);	_bbmin[t] = _bbmin[t].min(_o);
-				_bbmax[t] = _bbmax[t].max(_i);	_bbmax[t] = _bbmax[t].max(_o);
+				box.row(0) = box.row(0).min(inner).min(outer);
+				box.row(1) = box.row(1).max(inner).max(outer);
 			}
 		}
+		return boxes;
 	}
 
-
-	int_2 get_incidence(){return this->incidence;}
-	void set_incidence(int_2 incidence){this->incidence = incidence;}
-	float_2 get_position(){return this->position;}
-	void set_position(float_2 position){this->position = position;}
-	float_2 get_bbmin(){return this->bbmin;}
-	void set_bbmin(float_2 bbmin){this->bbmin = bbmin;}
-	float_2 get_bbmax(){return this->bbmax;}
-	void set_bbmax(float_2 bbmax){this->bbmax = bbmax;}
+	ndarray<real_type, 2> get_boxes(){return boxes.unview<real_type>();}
+	void set_boxes(ndarray<real_type, 2> b){int a=3;}
 
 };

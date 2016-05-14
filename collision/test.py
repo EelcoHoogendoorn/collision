@@ -10,5 +10,5 @@ grid = Collision.Grid3d(points, lengthscale)
 print(grid.permutation)
 print(grid.pivots)#[:grid.n_buckets+1])
 print(grid.n_buckets)
-# for i,id in zip(grid.indices, grid.cell_ids):
-#     print(i, id)
+for i,c in zip(grid.permutation, grid.cells):
+    print(i, c)

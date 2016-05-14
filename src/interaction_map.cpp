@@ -72,6 +72,8 @@ public:
 
 public:
 	//interface methods
+	auto get_cells() const { return cell_id.unview<cell_type_scalar>(); }
+	void set_cells(ndarray<index_type, 2> cells) { int a = 3; }
 	auto get_permutation() const { return this->permutation; }
 	void set_permutation(ndarray<index_type> permutation) { int a = 3; }
 	auto get_pivots() const { return this->pivots; }
@@ -101,9 +103,10 @@ public:
 private:
 	//determine extents of data
 	auto init_extents() const {
+		auto inf = std::numeric_limits<vector_type_scalar>::infinity();
 		extents_type extents;
-		extents.row(0).fill(+std::numeric_limits<vector_type_scalar>::infinity());
-		extents.row(1).fill(-std::numeric_limits<vector_type_scalar>::infinity());
+		extents.row(0).fill(+inf);
+		extents.row(1).fill(-inf);
 		for (auto p : position) {
 			extents.row(0) = extents.row(0).min(p);
 			extents.row(1) = extents.row(1).max(p);
