@@ -324,6 +324,22 @@ public:
     _view.init_view(*this);
     return _view;
   }
+
+  void init_resize(const size_type newsize)
+  {
+    extent_list_[0] = newsize;
+    num_elements_ = std::accumulate(extent_list_.begin(),
+                                    extent_list_.end(),
+                                    size_type(1),
+                                    std::multiplies<size_type>());
+  }
+  // cap the length of the first axis
+  self_type resize(const size_type newsize) const
+  {
+    self_type resized(*this);
+    resized.init_resize(newsize);
+    return resized;
+  }
 };
 
 #endif

@@ -53,117 +53,103 @@ public:
     typedef Eigen::Array<cell_type_scalar,   1, NDim> cell_type;
     typedef Eigen::Array<int,                1, NDim> strides_type;
 
-	const ndarray<1, const vector_type>  position;    //  positions
-	const index_type                n_points;
-	const float                     lengthscale; // size of a virtual voxel
+	const ndarray<1, vector_type>   position;    // positions
+	const index_type                n_points;    // number of points
+	const vector_type_scalar        lengthscale; // size of a virtual voxel
 
     const extents_type              extents;     // maximum extent of pointcloud; used to map coordinates to positive integers
-	const cell_type                 size;        // number of virtual buckets in each direction; used to prevent out-of-bound lookup
+	const cell_type                 shape;       // number of virtual buckets in each direction; used to prevent out-of-bound lookup
 	const strides_type              strides;     // for lex-ranking cells
 public:
-	ndarray<2, cell_type_scalar>   _cell_id; // the cell coordinates a vertex resides in
-	const ndarray<1, const cell_type>   cell_id; // the cell coordinates a vertex resides in
-	const ndarray<1,       index_type>  indices; // index array mapping the vertices to lexographically sorted order
-	      ndarray<1,       index_type>  pivots;	 // boundaries between buckets in vertices as viewed under indices
-	const index_type                    n_buckets;// number of cells
+	const ndarray<1, cell_type>     cell_id;     // the cell coordinates a vertex resides in
+	const ndarray<1, index_type>    permutation; // index array mapping the vertices to lexographically sorted order
+	const ndarray<1, index_type>    pivots;	     // boundaries between buckets of cells as viewed under permutation
+	const index_type                n_buckets;   // number of cells
+
 	const HashMap<cell_type, index_type, NDim> bucket_from_cell; // maps cell coordinates to bucket index
 
 public:
 	//interface methods
-	ndarray<2, cell_type_scalar> get_cell_ids() {
-		//std::cout << "converted array" << std::endl;
-	 //   auto arr = ndarray<2, cell_type_scalar>((PyObject*)&(this->cell_id.array));		// crash at this line
-	 //   std::cout << "converted array" << std::endl;
-	    return this->_cell_id;
-	}
-	void set_cell_ids(ndarray<2, cell_type_scalar> cells) {int a=3;}
-	ndarray<1, index_type> get_indices() const {return this->indices;}
-	void set_indices(ndarray<1, index_type> indices) {int a=3;}
+	ndarray<1, index_type> get_permutation() const {return this->permutation;}
+	void set_permutation(ndarray<1, index_type> permutation) {int a=3;}
 	ndarray<1, index_type> get_pivots() const {return this->pivots;}
-	void set_pivots(ndarray<1, index_type> pivots){this->pivots = pivots;}
+	void set_pivots(ndarray<1, index_type> pivots){int a=3;}
 
     // grid constructor
-	explicit VertexGridHash(const ndarray<2, vector_type_scalar> position, const vector_type_scalar lengthscale):
-		position    (position.view<const vector_type>()),
+	explicit VertexGridHash(ndarray<2, vector_type_scalar> position, vector_type_scalar lengthscale):
+		position    (position.view<vector_type>()),
 		n_points    (position.size()),
 		lengthscale (lengthscale),
 		extents     (init_extents()),
-		size        (init_size()),
+		shape       (init_shape()),
 		strides     (init_strides()),
-		_cell_id    ({ n_points, NDim }),
 		cell_id     (init_cells()),
-		indices     (init_indices()),
-		pivots      ({n_points}),
-		n_buckets   (init_pivots()),
-		bucket_from_cell(
-		    n_buckets,
-		    boost::combine(       // create a map to invert the cell_from_bucket function
+		permutation (init_permutation()),
+		pivots      (init_pivots()),
+		n_buckets   (pivots.size()-1),
+		bucket_from_cell(       // create a map to invert the cell_from_bucket function
+		    boost::combine(
                 irange(0, n_buckets) | transformed([&](auto b){return cell_from_bucket(b);}),
                 irange(0, n_buckets)
 		    )
 		)
-	{
-	    // empty constructor; noice
+	{   // empty constructor; noice
 	}
 
 private:
 	//determine extents of data
-	extents_type init_extents() const
-	{
-	    extents_type ext;
-		ext.row(0).fill(+std::numeric_limits<vector_type_scalar>::infinity());
-		ext.row(1).fill(-std::numeric_limits<vector_type_scalar>::infinity());
-		for (auto p: position)
-		{
-			ext.row(0) = ext.row(0).min(p);
-			ext.row(1) = ext.row(1).max(p);
+	extents_type init_extents() const {
+	    extents_type extents;
+		extents.row(0).fill(+std::numeric_limits<vector_type_scalar>::infinity());
+		extents.row(1).fill(-std::numeric_limits<vector_type_scalar>::infinity());
+		for (auto p: position) {
+			extents.row(0) = extents.row(0).min(p);
+			extents.row(1) = extents.row(1).max(p);
 		}
-		return ext;
+		return extents;
 	}
-    // integer size of the domain
-	cell_type init_size() const {
+    // integer shape of the domain
+	cell_type init_shape() const {
 	    return transform(extents.row(1) - extents.row(0)).cast<cell_type_scalar>() + 1;	// use +0.5 before cast?
 	}
-
+    // find strides for efficient lexsort
 	strides_type init_strides() const {
-//		boost::partial_sum(size.cast<int>(), begin(strides), std::multiplies<int>());   // doesnt work somehow
+//		boost::partial_sum(shape.cast<int>(), begin(strides), std::multiplies<int>());   // doesnt work somehow
         strides_type strides;
         strides(0) = 1;
 		for (auto i : irange(1, NDim))
-			strides(i) = strides(i-1) * size(i-1);
+			strides(i) = strides(i-1) * shape(i-1);
 		return strides;
 	}
-
 	// determine grid cells
-	ndarray<1, const cell_type> init_cells() const
-	{
-		// silly indirection, because we cannot yet allocate custom type
-	    //_cell_id = ndarray<2, cell_type_scalar>({n_points, NDim});
-	    ndarray<1, cell_type> cidx = _cell_id.view<cell_type>();
+	ndarray<1, cell_type> init_cells() const {
+		// silly indirection, because we cannot yet allocate custom type directly
+	    auto _cell_id = ndarray<2, cell_type_scalar>({n_points, NDim});
+	    auto cell_id = _cell_id.view<cell_type>();
 		for (auto v: irange(0, n_points))
-			cidx[v] = cell_from_position(position[v]);
-	    return _cell_id.view<const cell_type>();
+			cell_id[v] = cell_from_position(position[v]);
+	    return cell_id;
 	}
 	// finds the index vector that puts the vertices in a lexographically sorted order
-	ndarray<1, index_type> init_indices() const
-	{
-		// create index array, based on lexographical ordering
-	    ndarray<1, index_type> idx({n_points});
+	ndarray<1, index_type> init_permutation() const {
+	    ndarray<1, index_type> permutation({n_points});
 	    // init with initial order; 0 to n
-		boost::copy(irange(0, n_points), idx.begin());
-        // branching-free lex ordering
+		boost::copy(irange(0, n_points), permutation.begin());
+        // branching-free lex sorting ftw
 		auto lex = [&](auto l, auto r) {return ((cell_id[l] - cell_id[r]).cast<int>() * strides).sum() > 0;};
         // do the sort; boost::integer_sort might be preferable?
-		boost::sort(idx, lex);
-		return idx;//.view<index_type>();
+		boost::sort(permutation, lex);
+		return permutation;
 	}
 	//divide the sorted vertices into buckets, containing vertices in the same virtual voxel
-	index_type init_pivots()
-	{
-		index_type np = 0;		//number of pivots
-		auto add_pivot = [&](auto b) {pivots[np] = b; np += 1;};
+	ndarray<1, index_type> init_pivots() const {
+	    // allocate array of size n_points, becuase it plays nicely with the rest of our numpy mempool
+	    ndarray<1, index_type> pivots({n_points});
 
-        auto res = indices
+		index_type n_pivots = 0;		//number of pivots
+		auto add_pivot = [&](auto b) {pivots[n_pivots++] = b;};
+
+        auto res = permutation
                     | transformed([&](auto i){return cell_id[i];})
                     | indexed(0)
                     | adjacent_filtered([](auto a, auto b){return (a.value() != b.value()).any();})
@@ -171,15 +157,11 @@ private:
 
         for (auto i : res)
 			add_pivot(i);
+		if (n_pivots == n_points)
+		    throw python_exception("every vertex is in its own cell; lengthscale probably needs to go way up");
 		add_pivot(n_points);
 
-		if (np >= n_points)
-		    throw python_exception("every vertex is in its own cell; lengthscale probably needs to go way up");
-
-//        int_1::extent_gen extents;
-//        pivots.view(boost::extents[np - 1]);;;
-
-		return np - 1;
+		return pivots.resize(n_pivots);
 	}
 
 
@@ -196,7 +178,7 @@ protected:
 	}
 	//convert bucket index into cell coords
 	inline const cell_type cell_from_bucket(index_type b) const {
-		return cell_id[indices[pivots[b]]];
+		return cell_id[permutation[pivots[b]]];
 	}
 
 protected:
@@ -208,15 +190,15 @@ protected:
     }
 	auto vertices_from_cell(const cell_type& cell) const {
 		return indices_from_cell(cell)
-		        | transformed([&](index_type i){return indices[i];});
+		        | transformed([&](index_type i){return permutation[i];});
     }
 
 public:
     // public traversal interface; what this class is all about
 	template <class F>
 	void for_each_vertex_in_cell(const cell_type& cell, const F& body) const {
-		for (const int i: indices_from_cell(cell))
-			body(indices[i]);
+		for (auto v: vertices_from_cell(cell))
+			body(v);
 	}
 
 	//loop over each occupied cell in the grid
@@ -240,11 +222,11 @@ public:
 		const vector_type lmax = transform(gmax);
 
 		//intersected volume is not positive; bail
-		if ((lmin.max(vector_type(0,0,0)) > lmax.min(size.cast<vector_type_scalar>())).any()) return;
+		if ((lmin.max(vector_type(0,0,0)) > lmax.min(shape.cast<vector_type_scalar>())).any()) return;
 
-		//compute local cell coords; constrain to [0-size)
+		//compute local cell coords; constrain to [0-shape)
 		const cell_type lb =  cell_from_local_position(lmin)   .max(cell_type(0, 0, 0));
-		const cell_type ub = (cell_from_local_position(lmax)+1).min(size              );
+		const cell_type ub = (cell_from_local_position(lmax)+1).min(shape             );
 
 		//loop over all cells that intersect with bb
 		for (auto x: irange(lb[0], ub[0]))
