@@ -17,7 +17,7 @@
 const std::array<int, 3> PRIMES = { 73856093, 19349663, 83492791 };
 
 
-template<typename key_type, typename value_type, int NDim>
+template<class key_type, class value_type, int NDim>
 class HashMap {
 
 	typedef int64                                       primes_type_scalar;
@@ -28,8 +28,15 @@ class HashMap {
 	const int           n_items;   // number of items
 	const int           n_entries; // number of entries
 	const int           mask;      // bitmask for valid range
-	ndarray<key_type>   keys;      // voxel coordinates uniquely identifying a bucket
-	ndarray<value_type> values;    // bucket description, or where to look in pivot array
+
+    ndarray<key_type>   keys;      // voxel coordinates uniquely identifying a bucket
+    ndarray<value_type> values;    // bucket description, or where to look in pivot array
+
+    // could use something like this for complete immutability
+//	struct items_type{
+//	    ndarray<key_type>   keys;      // voxel coordinates uniquely identifying a bucket
+//	    ndarray<value_type> values;    // bucket description, or where to look in pivot array
+//    };
 
 public:
 	// construct by zipping keys and values range

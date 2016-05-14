@@ -12,3 +12,5 @@ merge this into trianglemesh? colinfo should come from trianglemesh
 add eigen::map to numpy funcs as well?
 use this for inspiration?
 https://github.com/julienr/boost_numpy_eigen
+
+add improved mode funcs

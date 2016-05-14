@@ -32,6 +32,7 @@ BOOST_PYTHON_MODULE(Collision)
 
 
 	class_<Grid2d>("Grid2d", init<ndarray<float32, 2>, float32>())
+		.add_property("cells",      &Grid2d::get_cells,       &Grid2d::set_cells)
 		.add_property("permutation",&Grid2d::get_permutation, &Grid2d::set_permutation)
 		.add_property("pivots",     &Grid2d::get_pivots,      &Grid2d::set_pivots)
 		.def_readonly("n_buckets",  &Grid2d::n_buckets)

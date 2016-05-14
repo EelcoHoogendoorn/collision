@@ -21,12 +21,12 @@ should we iteratively deform the mesh along its normals, implementing normal cal
 */
 
 template <typename real_type>
-class TriangleMesh{
+class TriangleMesh {
 
-    typedef int32 index_type;
-    typedef Eigen::Array<index_type, 1, 3> triangle_type;
-    typedef Eigen::Array<real_type,  1, 3> vector_type;
-    typedef Eigen::Array<real_type,  2, 3> box_type;
+	typedef int32 index_type;
+	typedef Eigen::Array<index_type, 1, 3> triangle_type;
+	typedef Eigen::Array<real_type, 1, 3> vector_type;
+	typedef Eigen::Array<real_type, 2, 3> box_type;
 
 	const index_type    n_triangles;
 	const index_type    n_vertices;
@@ -35,22 +35,22 @@ class TriangleMesh{
 	const ndarray<vector_type>      position;
 	const ndarray<vector_type>      normal;
 	const ndarray<triangle_type>    triangles;
-    const ndarray<box_type>         boxes;
+	const ndarray<box_type>         boxes;
 
 public:
 	explicit TriangleMesh(
-	    ndarray<real_type, 2> position,
-	    ndarray<real_type, 2> normal,
-	    ndarray<index_type, 2> triangles,
-	    real_type thickness
-	):
-		position    (position.view<vector_type>()),
-		normal      (normal.view<vector_type>()),
-		triangles   (triangles.view<triangle_type>()),
-		thickness   (thickness),
-        n_vertices  (position.size()),
-        n_triangles (triangles.size()),
-        boxes       (init_boxes())
+		ndarray<real_type, 2> position,
+		ndarray<real_type, 2> normal,
+		ndarray<index_type, 2> triangles,
+		real_type thickness
+	) :
+		position(position.view<vector_type>()),
+		normal(normal.view<vector_type>()),
+		triangles(triangles.view<triangle_type>()),
+		thickness(thickness),
+		n_vertices(position.size()),
+		n_triangles(triangles.size()),
+		boxes(init_boxes())
 	{
 	}
 
@@ -59,16 +59,16 @@ public:
 	{
 		auto inf = std::numeric_limits<real_type>::infinity();
 
-        ndarray<box_type> boxes(ndarray<real_type, 2>({n_triangles, 6}).view<box_type>());
+		ndarray<box_type> boxes(ndarray<real_type, 2>({ n_triangles, 6 }).view<box_type>());
 
-		for (const int t: boost::irange(0, n_triangles))	//loop over all triangles
+		for (const int t : boost::irange(0, n_triangles))	//loop over all triangles
 		{
-            box_type& box = boxes[t];
-            box.row(0).fill(+inf);
-            box.row(1).fill(-inf);
+			box_type& box = boxes[t];
+			box.row(0).fill(+inf);
+			box.row(1).fill(-inf);
 
 			const triangle_type& triangle = triangles[t];
-			for (auto i: boost::irange(0, 3))		//loop over all vertices incident to the triangle
+			for (auto i : boost::irange(0, 3))		//loop over all vertices incident to the triangle
 			{
 				auto v = triangle(i);
 
@@ -82,7 +82,7 @@ public:
 		return boxes;
 	}
 
-	ndarray<real_type, 2> get_boxes(){return boxes.unview<real_type>();}
-	void set_boxes(ndarray<real_type, 2> b){int a=3;}
+	ndarray<real_type, 2> get_boxes() { return boxes.unview<real_type>(); }
+	void set_boxes(ndarray<real_type, 2> b) { int a = 3; }
 
 };
