@@ -8,7 +8,7 @@ defines numpy boost array types used
 #include "numpy_boost_python.hpp"
 
 
-//using namespace boost::python;
+// make ndarray subclass of numpy_boost?
 template <int N, typename T>
 using ndarray = numpy_boost<T, N>;
 

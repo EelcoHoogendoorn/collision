@@ -8,12 +8,10 @@
 #include <boost/range/difference_type.hpp>
 #include <boost/tuple/tuple.hpp>
 
+#include "typedefs.cpp"
 #include "numpy_eigen/array.cpp"
 #include "numpy_boost/ndarray.cpp"
 
-
-//used for hashing calcs
-const std::array<int64, 3> PRIMES = { 73856093, 19349663, 83492791 };
 
 
 template<class key_type, class value_type, int NDim>
@@ -21,6 +19,8 @@ class HashMap {
 	typedef int64 primes_type_scalar;
 	typename typedef key_type::Scalar key_type_scalar;
 	typedef RowArray<primes_type_scalar, NDim> primes_type;
+    //used for hashing calcs
+    const std::array<primes_type_scalar, 3> PRIMES = { 73856093, 19349663, 83492791 };
 
 	const primes_type primes;       // for hashing
 	const int n_items;              // number of items
@@ -44,11 +44,9 @@ public:
 			write(boost::get<0>(item), boost::get<1>(item));
 	}
 
-	inline const value_type operator[](const key_type& key) const
-	{
+	inline value_type operator[](const key_type& key) const {
 		int entry = get_hash(key);			//hash guess
-		while (true)						//find the right entry
-		{
+		while (true) {						//find the right entry
 			if ((keys[entry] == key).all())
 				return values[entry];	                // we found it; this should be the most common code path
 			if (values[entry] == -1) return -1;	    	// if we didnt find it yet by now, we never will
@@ -58,18 +56,16 @@ public:
 
 private:
 	// copy required number of primes into constant array
-	primes_type init_primes() const {
+	auto init_primes() const {
 		primes_type primes;
 		for (auto i : boost::irange(0, NDim))
 			primes(i) = PRIMES[i];
 		return primes;
 	}
 
-	inline void write(const key_type& key, const value_type value)
-	{
-		int entry = get_hash(key);				// get entry initial guess
-		while (true)                            // find an empty entry
-		{
+	inline void write(const key_type& key, value_type value) {
+		auto entry = get_hash(key);				// get entry initial guess
+		while (true) {                          // find an empty entry
 			if (values[entry] == -1) break;     // found an empty entry
 			entry = (entry + 1) & mask;	        // circular increment
 		}
@@ -77,23 +73,22 @@ private:
 		keys[entry] = key;
 	}
 
-	inline int get_hash(const key_type& key) const {
+	inline auto get_hash(const key_type& key) const {
 		return (key.cast<primes_type_scalar>() * primes).redux(std::bit_xor<primes_type_scalar>()) & mask;
 	}
 
-	int init_entries() const
-	{
+	auto init_entries() const{
 		//calc number of entries in hashmap. hashmap should have twice the number of items, at mimimum.
 		int entries = 64;
 		while (entries < n_items * 2) entries <<= 1;
 		return entries;
 	}
 
-	ndarray<1, key_type> init_keys() const {
+	auto init_keys() const {
 		return ndarray<2, key_type_scalar>({n_entries, NDim}).view<key_type>();
 	}
 
-	ndarray<1, value_type> init_values() const {
+	auto init_values() const {
 		ndarray<1, value_type> values({n_entries});
 		fill(values, -1); 		//mark grid as unoccupied
 		return values;

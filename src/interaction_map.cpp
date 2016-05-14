@@ -17,10 +17,10 @@
 #include <boost/range/adaptor/adjacent_filtered.hpp>
 //#include <boost/range/adaptors.hpp>       // somehow gives a link error?
 
+#include "typedefs.cpp"
 #include "numpy_eigen/array.cpp"
 #include "numpy_boost/ndarray.cpp"
 #include "maps.cpp"
-#include "typedefs.cpp"
 
 
 using namespace boost;
@@ -72,9 +72,9 @@ public:
 
 public:
 	//interface methods
-	ndarray<1, index_type> get_permutation() const { return this->permutation; }
+	auto get_permutation() const { return this->permutation; }
 	void set_permutation(ndarray<1, index_type> permutation) { int a = 3; }
-	ndarray<1, index_type> get_pivots() const { return this->pivots; }
+	auto get_pivots() const { return this->pivots; }
 	void set_pivots(ndarray<1, index_type> pivots) { int a = 3; }
 
 	// grid constructor
@@ -100,7 +100,7 @@ public:
 
 private:
 	//determine extents of data
-	extents_type init_extents() const {
+	auto init_extents() const {
 		extents_type extents;
 		extents.row(0).fill(+std::numeric_limits<vector_type_scalar>::infinity());
 		extents.row(1).fill(-std::numeric_limits<vector_type_scalar>::infinity());
@@ -111,11 +111,11 @@ private:
 		return extents;
 	}
 	// integer shape of the domain
-	cell_type init_shape() const {
+	cell_type init_shape() const {      // interestingly, using auto as return type fails spectacularly
 		return transform(extents.row(1) - extents.row(0)).cast<cell_type_scalar>() + 1;	// use +0.5 before cast?
 	}
 	// find strides for efficient lexsort
-	strides_type init_strides() const {
+	auto init_strides() const {
 		//		boost::partial_sum(shape.cast<int>(), begin(strides), std::multiplies<int>());   // doesnt work somehow
 		strides_type strides;
 		strides(0) = 1;
@@ -124,7 +124,7 @@ private:
 		return strides;
 	}
 	// determine grid cells
-	ndarray<1, cell_type> init_cells() const {
+	auto init_cells() const {
 		// silly indirection, because we cannot yet allocate custom type directly
 		auto cell_id = ndarray<2, cell_type_scalar>({ n_points, NDim }).view<cell_type>();
 		for (auto v : irange(0, n_points))
@@ -132,7 +132,7 @@ private:
 		return cell_id;
 	}
 	// finds the index vector that puts the vertices in a lexographically sorted order
-	ndarray<1, index_type> init_permutation() const {
+	auto init_permutation() const {
 		ndarray<1, index_type> permutation({ n_points });
 		// init with initial order; 0 to n
 		boost::copy(irange(0, n_points), permutation.begin());
@@ -143,7 +143,7 @@ private:
 		return permutation;
 	}
 	//divide the sorted vertices into buckets, containing vertices in the same virtual voxel
-	ndarray<1, index_type> init_pivots() const {
+	auto init_pivots() const {
 		// allocate array of size n_points, becuase it plays nicely with the rest of our numpy mempool
 		ndarray<1, index_type> pivots({ n_points });
 
@@ -168,17 +168,17 @@ private:
 
 protected:
 	//map a global coord into the grid local coords
-	inline const vector_type transform(const vector_type& v) const {
+	inline vector_type transform(const vector_type& v) const {
 		return (v - extents.row(0)) / lengthscale;
 	}
-	inline const cell_type cell_from_local_position(const vector_type& v) const {
+	inline cell_type cell_from_local_position(const vector_type& v) const {
 		return (v).cast<cell_type_scalar>();	// defacto floor
 	}
-	inline const cell_type cell_from_position(const vector_type& v) const {
+	inline cell_type cell_from_position(const vector_type& v) const {
 		return cell_from_local_position(transform(v));
 	}
 	//convert bucket index into cell coords
-	inline const cell_type cell_from_bucket(index_type b) const {
+	inline cell_type cell_from_bucket(index_type b) const {
 		return cell_id[permutation[pivots[b]]];
 	}
 
