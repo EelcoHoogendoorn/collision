@@ -140,7 +140,8 @@ private:
 		// init with initial order; 0 to n
 		boost::copy(irange(0, n_points), permutation.begin());
 		// branching-free lex sorting ftw
-		auto lex = [&](auto l, auto r) {return ((cell_id[l] - cell_id[r]).cast<hash_type>() * strides).sum() < 0;};
+		auto _cell_id = cell_id.range();
+		auto lex = [&](auto l, auto r) {return ((_cell_id[l] - _cell_id[r]).cast<hash_type>() * strides).sum() < 0;};
         // wow, casting permutation to raw range yield factor 3 performance in sorted case
 		boost::sort(permutation.range(), lex);
 		return permutation;
