@@ -39,7 +39,6 @@ public:
 		keys(init_keys()),
 		values(init_values())
 	{
-		//mark grid as unoccupied
 		for (auto item : items)
 			write(boost::get<0>(item), boost::get<1>(item));
 	}
@@ -95,7 +94,7 @@ private:
 
 	ndarray<1, value_type> init_values() const {
 		ndarray<1, value_type> values({n_entries});
-		fill(values, -1);
+		fill(values, -1); 		//mark grid as unoccupied
 		return values;
 	}
 
