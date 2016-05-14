@@ -2,28 +2,28 @@
 #pragma once
 
 #include <functional>
+#include <array>
 
+#include <boost/range/irange.hpp>
 #include <boost/tuple/tuple.hpp>
-
 
 #include "ndarray.cpp"
 #include "linalg.cpp"
 
 
 //used for hashing calcs
-const int3 primes(73856093, 19349663, 83492791);
+const std::array<int, 3> PRIMES = {73856093, 19349663, 83492791};
 
 
 template<class key_type, class value_type, int NDim>
 class HashMap {
-
-//	typedef key_type key_type;
-
-//    typedef int32 key_type_scalar;
 	typename typedef key_type::Scalar key_type_scalar;
+	typedef RowArray<int, NDim> primes_type;
 
+	const primes_type primes;           // for hashing
     const int n_items;                  // number of items
 	const int n_entries;                // number of entries
+	const int mask;                     // bitmask for valid range
 	ndarray<2, key_type_scalar> keys;   // voxel coordinates uniquely identifying a bucket
 	ndarray<1, value_type>      values; // bucket description, or where to look in pivot array
 
@@ -31,8 +31,10 @@ public:
     // construct by zipping keys and values range
     template<typename items_range>
 	HashMap(const int n_items, const items_range& items):
+	    primes(init_primes()),
 	    n_items(n_items),
 	    n_entries(init_entries()),
+	    mask(n_entries-1),
 		keys({n_entries, NDim}),
 		values({n_entries})
 	{
@@ -51,28 +53,34 @@ public:
 			if ((_keys[entry] == key).all())
 			    return values[entry];	                // we found it; this should be the most common code path
 			if (values[entry] == -1) return -1;	    	// if we didnt find it yet by now, we never will
-			entry = (entry + 1) & (n_entries - 1);		// circular increment
+			entry = (entry + 1) & mask;		            // circular increment
 		}
 	}
 
 private:
+    // copy required number of primes into constant array
+    primes_type init_primes() const{
+        primes_type primes;
+        for (auto i : boost::irange(0, NDim))
+            primes(i) = PRIMES[i];
+        return primes;
+    }
+
 	inline void write(const key_type& key, const value_type value)
 	{
 	    auto _keys = keys.view<key_type>();
 		int entry = get_hash(key);				// get entry initial guess
 		while (true)                            // find an empty entry
 		{
-			if (values[entry] == -1) break;         // found an empty entry
-			entry = (entry + 1) & (n_entries - 1);	// circular increment
+			if (values[entry] == -1) break;     // found an empty entry
+			entry = (entry + 1) & mask;	        // circular increment
 		}
 		values[entry] = value;
 		_keys[entry] = key;
 	}
 
-	inline int get_hash(const key_type& key) const
-	{
-		const int3 c = key.cast<int>() * primes;
-		return c.redux(std::bit_xor<int>()) & (n_entries - 1);
+	inline int get_hash(const key_type& key) const {
+		return (key.cast<int>() * primes).redux(std::bit_xor<int>()) & mask;
 	}
 
 	int init_entries() const

@@ -53,7 +53,7 @@ public:
     typedef Eigen::Array<cell_type_scalar,   1, NDim> cell_type;
     typedef Eigen::Array<int,                1, NDim> strides_type;
 
-	const ndarray<1, const float3>  position;    //  positions
+	const ndarray<1, const vector_type>  position;    //  positions
 	const index_type                n_points;
 	const float                     lengthscale; // size of a virtual voxel
 
@@ -240,7 +240,7 @@ public:
 		const vector_type lmax = transform(gmax);
 
 		//intersected volume is not positive; bail
-		if ((lmin.max(float3(0,0,0)) > lmax.min(size.cast<vector_type_scalar>())).any()) return;
+		if ((lmin.max(vector_type(0,0,0)) > lmax.min(size.cast<vector_type_scalar>())).any()) return;
 
 		//compute local cell coords; constrain to [0-size)
 		const cell_type lb =  cell_from_local_position(lmin)   .max(cell_type(0, 0, 0));

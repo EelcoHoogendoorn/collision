@@ -9,7 +9,8 @@ boost python interface definition
 #include "typedefs.cpp"
 
 
-typedef VertexGridHash<int16, float32, 3> Grid;
+typedef VertexGridHash<int16, float32, 2> Grid2d;
+typedef VertexGridHash<int16, float32, 3> Grid3d;
 
 
 using namespace boost::python;
@@ -25,56 +26,24 @@ BOOST_PYTHON_MODULE(Collision)
 	numpy_boost_python_register_type<int32, 2>();
 	numpy_boost_python_register_type<float32, 1>();
 	numpy_boost_python_register_type<float32, 2>();
-//	numpy_boost_python_register_type<int3, 1>();
 
 
-	class_<Grid>("VertexGridHash", init<ndarray<2, float>, float>())
-		.add_property("cell_ids",   &Grid::get_cell_ids,   &Grid::set_cell_ids)
-		.add_property("indices", &Grid::get_indices, &Grid::set_indices)
-		.add_property("pivots",  &Grid::get_pivots,  &Grid::set_pivots)
-		.def_readonly("n_buckets", &Grid::n_buckets)
-
-//		.def_readonly("vertices", &Grid::n_vertices)
-		
-//		.def("unit_test", &Grid::unit_test)
+	class_<Grid2d>("Grid2d", init<ndarray<2, float>, float>())
+		.add_property("cell_ids",   &Grid2d::get_cell_ids,    &Grid2d::set_cell_ids)
+		.add_property("indices",    &Grid2d::get_indices,     &Grid2d::set_indices)
+		.add_property("pivots",     &Grid2d::get_pivots,      &Grid2d::set_pivots)
+		.def_readonly("n_buckets",  &Grid2d::n_buckets)
+//		.def("unit_test", &Grid2::unit_test)
 		;
 
+	class_<Grid3d>("Grid3d", init<ndarray<2, float>, float>())
+		.add_property("cell_ids",   &Grid3d::get_cell_ids,    &Grid3d::set_cell_ids)
+		.add_property("indices",    &Grid3d::get_indices,     &Grid3d::set_indices)
+		.add_property("pivots",     &Grid3d::get_pivots,      &Grid3d::set_pivots)
+		.def_readonly("n_buckets",  &Grid3d::n_buckets)
+//		.def("unit_test", &Grid3::unit_test)
+		;
 
-//	class_<TriangleMesh>("TriangleMesh", init<float_2, float_2, int_2, float>())
-//		.def("boundingbox", &TriangleMesh::boundingbox)
-//		.add_property(
-//		"position", &TriangleMesh::get_position, &TriangleMesh::set_position)
-//		.add_property(
-//		"incidence", &TriangleMesh::get_incidence, &TriangleMesh::set_incidence)
-//		.add_property(
-//		"bbmin", &TriangleMesh::get_bbmin, &TriangleMesh::set_bbmin)
-//		.add_property(
-//		"bbmax", &TriangleMesh::get_bbmax, &TriangleMesh::set_bbmax)
-//
-//		.def_readonly("vertices", &TriangleMesh::vertices)
-//		;
-//
-//
-//	class_<CollisionInfo>("CollisionInfo", init<VertexGridHash&, TriangleMesh&, const bool>())
-//		.add_property(
-//		"bary", &CollisionInfo::get_bary, &CollisionInfo::set_bary)
-//		.add_property(
-//		"normal", &CollisionInfo::get_normal, &CollisionInfo::set_normal)
-//		.add_property(
-//		"depth", &CollisionInfo::get_depth, &CollisionInfo::set_depth)
-//		.add_property(
-//		"triangle", &CollisionInfo::get_triangle, &CollisionInfo::set_triangle)
-//
-//		//.def_readonly("vertexgrid", &CollisionInfo::vg)
-//		//.def_readonly("trianglemesh", &CollisionInfo::tm);
-//
-//		.def("vertexgrid",&get_vertexgrid,return_value_policy<reference_existing_object>())
-//		.def("trianglemesh",&get_trianglemesh,return_value_policy<reference_existing_object>())
-//
-//		.def("unit_test", &CollisionInfo::unit_test)
-//		;
-
-	
 	register_exception_translator<python_exception>(&translate);
 
 }
