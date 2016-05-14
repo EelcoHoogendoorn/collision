@@ -5,6 +5,7 @@
 #include <array>
 
 #include <boost/range/irange.hpp>
+#include <boost/range/difference_type.hpp>
 #include <boost/tuple/tuple.hpp>
 
 #include "ndarray.cpp"
@@ -30,9 +31,9 @@ class HashMap {
 public:
     // construct by zipping keys and values range
     template<typename items_range>
-	HashMap(const int n_items, const items_range& items):
+	HashMap(const items_range& items):
 	    primes(init_primes()),
-	    n_items(n_items),
+	    n_items(boost::distance(items)),
 	    n_entries(init_entries()),
 	    mask(n_entries-1),
 		keys({n_entries, NDim}),

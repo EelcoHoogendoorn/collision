@@ -28,17 +28,17 @@ BOOST_PYTHON_MODULE(Collision)
 	numpy_boost_python_register_type<float32, 2>();
 
 
-	class_<Grid2d>("Grid2d", init<ndarray<2, float>, float>())
-		.add_property("cell_ids",   &Grid2d::get_cell_ids,    &Grid2d::set_cell_ids)
-		.add_property("indices",    &Grid2d::get_indices,     &Grid2d::set_indices)
+	class_<Grid2d>("Grid2d", init<ndarray<2, float32>, float32>())
+//		.add_property("cell_ids",   &Grid2d::get_cell_ids,    &Grid2d::set_cell_ids)
+		.add_property("permutation",&Grid2d::get_permutation, &Grid2d::set_permutation)
 		.add_property("pivots",     &Grid2d::get_pivots,      &Grid2d::set_pivots)
 		.def_readonly("n_buckets",  &Grid2d::n_buckets)
 //		.def("unit_test", &Grid2::unit_test)
 		;
 
-	class_<Grid3d>("Grid3d", init<ndarray<2, float>, float>())
-		.add_property("cell_ids",   &Grid3d::get_cell_ids,    &Grid3d::set_cell_ids)
-		.add_property("indices",    &Grid3d::get_indices,     &Grid3d::set_indices)
+	class_<Grid3d>("Grid3d", init<ndarray<2, float32>, float32>())
+//		.add_property("cell_ids",   &Grid3d::get_cell_ids,    &Grid3d::set_cell_ids)
+		.add_property("permutation",&Grid3d::get_permutation, &Grid3d::set_permutation)
 		.add_property("pivots",     &Grid3d::get_pivots,      &Grid3d::set_pivots)
 		.def_readonly("n_buckets",  &Grid3d::n_buckets)
 //		.def("unit_test", &Grid3::unit_test)
