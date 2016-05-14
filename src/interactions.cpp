@@ -1,14 +1,14 @@
 #pragma once
 
-#include "linalg.cpp"
-#include "ndarray.cpp"
-#include "interaction_map.cpp"
-#include "trianglemesh.cpp"
-#include "collisioninfo.cpp"
-#include <boost/range/irange.hpp>
-#include <math.h>
+#include <math>
 #include <algorithm>
 #include <tuple>
+
+#include <boost/range/irange.hpp>
+
+#include "interaction_map.cpp"
+#include "triangle_mesh.cpp"
+#include "collision_info.cpp"
 
 
 /*

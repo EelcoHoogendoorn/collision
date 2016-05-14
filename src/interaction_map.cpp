@@ -141,8 +141,8 @@ private:
 		boost::copy(irange(0, n_points), permutation.begin());
 		// branching-free lex sorting ftw
 		auto lex = [&](auto l, auto r) {return ((cell_id[l] - cell_id[r]).cast<hash_type>() * strides).sum() < 0;};
-		// do the sort; boost::integer_sort might be preferable?
-		boost::sort(permutation, lex);
+        // wow, casting permutation to raw range yield factor 3 performance in sorted case
+		boost::sort(permutation.range(), lex);
 		return permutation;
 	}
 	//divide the sorted vertices into buckets, containing vertices in the same virtual voxel

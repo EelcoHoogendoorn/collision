@@ -73,4 +73,4 @@ def vispy_plot(mesh):
     app.run()
 
 
-test_mesh()
+test_performance()
