@@ -5,12 +5,12 @@ boost python interface definition
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 
 #include "typedefs.cpp"
-#include "exception.cpp"
+#include "numpy_boost/exception.cpp"
 #include "interaction_map.cpp"
 #include "triangle_mesh.cpp"
 
-typedef VertexGridHash<int16, float32, 2> Grid2d;
-typedef VertexGridHash<int16, float32, 3> Grid3d;
+typedef VertexGridHash<float32, int16, 2> Grid2d;
+typedef VertexGridHash<float32, int16, 3> Grid3d;
 
 typedef TriangleMesh<float32> Mesh;
 

@@ -12,6 +12,7 @@
 #include "numpy_eigen/array.cpp"
 #include "numpy_boost/ndarray.cpp"
 
+
 //used for hashing calcs
 const std::array<int, 3> PRIMES = { 73856093, 19349663, 83492791 };
 

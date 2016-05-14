@@ -19,6 +19,7 @@
 #include "typedefs.cpp"
 #include "numpy_eigen/array.cpp"
 #include "numpy_boost/ndarray.cpp"
+#include "numpy_boost/exception.cpp"
 #include "maps.cpp"
 
 
@@ -38,7 +39,7 @@ fits snugly in L1 cache
 the only way to make this faster would be to actively reorder the input points, to exploit temporal coherency in the lexsort
 */
 
-template<typename cell_type_scalar, typename vector_type_scalar, int NDim>
+template<typename real_type, typename fixed_type, int NDim>
 class VertexGridHash {
 	/*
 	this datastructure allows for coarse/braod collision queries
@@ -49,14 +50,14 @@ class VertexGridHash {
 public:
 	typedef int32 index_type;       // 32 bit int is a fine size type; 4 billion points isnt very likely
 	typedef int64 hash_type;
-	typedef Eigen::Array<vector_type_scalar, 2, NDim>   extents_type;
-	typedef Eigen::Array<vector_type_scalar, 1, NDim>   vector_type;
-	typedef Eigen::Array<cell_type_scalar, 1, NDim>     cell_type;
-	typedef Eigen::Array<hash_type, 1, NDim>            strides_type;
+	typedef Eigen::Array<real_type,  2, NDim>	extents_type;
+	typedef Eigen::Array<real_type,  1, NDim>	vector_type;
+	typedef Eigen::Array<fixed_type, 1, NDim>	cell_type;
+	typedef Eigen::Array<hash_type,  1, NDim>	strides_type;
 
 	const ndarray<vector_type>      position;    // positions
 	const index_type                n_points;    // number of points
-	const vector_type_scalar        lengthscale; // size of a virtual voxel
+	const real_type                 lengthscale; // size of a virtual voxel
 
 	const extents_type              extents;     // maximum extent of pointcloud; used to map coordinates to positive integers
 	const cell_type                 shape;       // number of virtual buckets in each direction; used to prevent out-of-bound lookup
@@ -71,15 +72,15 @@ public:
 
 public:
 	//interface methods
-	auto get_cells() const { return cell_id.unview<cell_type_scalar>(); }
-	void set_cells(ndarray<index_type, 2> cells) { int a = 3; }
-	auto get_permutation() const { return this->permutation; }
-	void set_permutation(ndarray<index_type> permutation) { int a = 3; }
-	auto get_pivots() const { return this->pivots; }
-	void set_pivots(ndarray<index_type> pivots) { int a = 3; }
+	auto get_cells()        const { return cell_id.unview<fixed_type>(); }
+	auto get_permutation()  const { return permutation; }
+	auto get_pivots()       const { return pivots; }
+	void set_cells(ndarray<fixed_type, 2> cells)             { int a = 3; }
+	void set_permutation(ndarray<index_type> permutation)   { int a = 3; }
+	void set_pivots(ndarray<index_type> pivots)             { int a = 3; }
 
 	// grid constructor
-	explicit VertexGridHash(ndarray<vector_type_scalar, 2> position, vector_type_scalar lengthscale) :
+	explicit VertexGridHash(ndarray<real_type, 2> position, real_type lengthscale) :
 		position	(position.view<vector_type>()),
 		n_points	(position.size()),
 		lengthscale	(lengthscale),
@@ -102,7 +103,7 @@ public:
 private:
 	//determine extents of data
 	auto init_extents() const {
-		auto inf = std::numeric_limits<vector_type_scalar>::infinity();
+		auto inf = std::numeric_limits<real_type>::infinity();
 		extents_type extents;
 		extents.row(0).fill(+inf);
 		extents.row(1).fill(-inf);
@@ -114,7 +115,7 @@ private:
 	}
 	// integer shape of the domain
 	cell_type init_shape() const {      // interestingly, using auto as return type fails spectacularly
-		return transform(extents.row(1) - extents.row(0)).cast<cell_type_scalar>() + 1;	// use +0.5 before cast?
+		return transform(extents.row(1) - extents.row(0)).cast<fixed_type>() + 1;	// use +0.5 before cast?
 	}
 	// find strides for efficient lexsort
 	auto init_strides() const {
@@ -128,7 +129,7 @@ private:
 	// determine grid cells
 	auto init_cells() const {
 		// silly indirection, because we cannot yet allocate custom type directly
-		auto cell_id = ndarray<cell_type_scalar, 2>({ n_points, NDim }).view<cell_type>();
+		auto cell_id = ndarray<fixed_type, 2>({ n_points, NDim }).view<cell_type>();
 		for (auto v : irange(0, n_points))
 			cell_id[v] = cell_from_position(position[v]);
 		return cell_id;
@@ -174,7 +175,7 @@ protected:
 		return (v - extents.row(0)) / lengthscale;
 	}
 	inline cell_type cell_from_local_position(const vector_type& v) const {
-		return v.cast<cell_type_scalar>();	// we want to round towards zero; surprised that we do not need a -0.5 for that..
+		return v.cast<fixed_type>();	// we want to round towards zero; surprised that we do not need a -0.5 for that..
 	}
 	inline cell_type cell_from_position(const vector_type& v) const {
 		return cell_from_local_position(transform(v));
@@ -225,7 +226,7 @@ public:
 		const vector_type lmax = transform(gmax);
 
 		//intersected volume is not positive; bail
-		if ((lmin.max(vector_type(0, 0, 0)) > lmax.min(shape.cast<vector_type_scalar>())).any()) return;
+		if ((lmin.max(vector_type(0, 0, 0)) > lmax.min(shape.cast<real_type>())).any()) return;
 
 		//compute local cell coords; constrain to [0-shape)
 		const cell_type lb = cell_from_local_position(lmin).max(cell_type(0, 0, 0));
