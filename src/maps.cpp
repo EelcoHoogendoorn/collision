@@ -8,18 +8,19 @@
 #include <boost/range/difference_type.hpp>
 #include <boost/tuple/tuple.hpp>
 
-#include "ndarray.cpp"
-#include "linalg.cpp"
+#include "numpy_eigen/array.cpp"
+#include "numpy_boost/ndarray.cpp"
 
 
 //used for hashing calcs
-const std::array<int, 3> PRIMES = { 73856093, 19349663, 83492791 };
+const std::array<int64, 3> PRIMES = { 73856093, 19349663, 83492791 };
 
 
 template<class key_type, class value_type, int NDim>
 class HashMap {
+	typedef int64 primes_type_scalar;
 	typename typedef key_type::Scalar key_type_scalar;
-	typedef RowArray<int, NDim> primes_type;
+	typedef RowArray<primes_type_scalar, NDim> primes_type;
 
 	const primes_type primes;       // for hashing
 	const int n_items;              // number of items
@@ -32,12 +33,12 @@ public:
 	// construct by zipping keys and values range
 	template<typename items_range>
 	HashMap(const items_range& items) :
-		primes(init_primes()),
-		n_items(boost::distance(items)),
-		n_entries(init_entries()),
-		mask(n_entries - 1),
-		keys(init_keys()),
-		values(init_values())
+		primes      (init_primes()),
+		n_items     (boost::distance(items)),
+		n_entries   (init_entries()),
+		mask        (n_entries - 1),
+		keys        (init_keys()),
+		values      (init_values())
 	{
 		for (auto item : items)
 			write(boost::get<0>(item), boost::get<1>(item));
@@ -77,7 +78,7 @@ private:
 	}
 
 	inline int get_hash(const key_type& key) const {
-		return (key.cast<int>() * primes).redux(std::bit_xor<int>()) & mask;
+		return (key.cast<primes_type_scalar>() * primes).redux(std::bit_xor<primes_type_scalar>()) & mask;
 	}
 
 	int init_entries() const

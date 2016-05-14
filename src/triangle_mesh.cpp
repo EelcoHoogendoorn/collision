@@ -1,9 +1,10 @@
 #pragma once
 
 #include <limits>
+
+#include <boost/range.hpp>
 #include <boost/range/irange.hpp>
 #include <boost/range/algorithm.hpp>
-#include <boost/range.hpp>
 #include <boost/range/any_range.hpp>
 
 #include "linalg.cpp"
@@ -79,6 +80,5 @@ public:
 	void set_bbmin(float_2 bbmin){this->bbmin = bbmin;}
 	float_2 get_bbmax(){return this->bbmax;}
 	void set_bbmax(float_2 bbmax){this->bbmax = bbmax;}
-
 
 };

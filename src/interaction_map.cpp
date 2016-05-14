@@ -17,9 +17,10 @@
 #include <boost/range/adaptor/adjacent_filtered.hpp>
 //#include <boost/range/adaptors.hpp>       // somehow gives a link error?
 
-#include "linalg.cpp"
-#include "ndarray.cpp"
+#include "numpy_eigen/array.cpp"
+#include "numpy_boost/ndarray.cpp"
 #include "maps.cpp"
+#include "typedefs.cpp"
 
 
 using namespace boost;
@@ -47,11 +48,12 @@ class VertexGridHash {
 	*/
 
 public:
-	typedef int32 index_type;       // 32 bit int is a fine size type
-	typedef Eigen::Array<vector_type_scalar, 2, NDim> extents_type;
-	typedef Eigen::Array<vector_type_scalar, 1, NDim> vector_type;
-	typedef Eigen::Array<cell_type_scalar, 1, NDim> cell_type;
-	typedef Eigen::Array<int, 1, NDim> strides_type;
+	typedef int32 index_type;       // 32 bit int is a fine size type; 4 billion points isnt very likely
+	typedef int64 hash_type;
+	typedef Eigen::Array<vector_type_scalar, 2, NDim>   extents_type;
+	typedef Eigen::Array<vector_type_scalar, 1, NDim>   vector_type;
+	typedef Eigen::Array<cell_type_scalar, 1, NDim>     cell_type;
+	typedef Eigen::Array<hash_type, 1, NDim>            strides_type;
 
 	const ndarray<1, vector_type>   position;    // positions
 	const index_type                n_points;    // number of points
@@ -124,8 +126,7 @@ private:
 	// determine grid cells
 	ndarray<1, cell_type> init_cells() const {
 		// silly indirection, because we cannot yet allocate custom type directly
-		auto _cell_id = ndarray<2, cell_type_scalar>({ n_points, NDim });
-		auto cell_id = _cell_id.view<cell_type>();
+		auto cell_id = ndarray<2, cell_type_scalar>({ n_points, NDim }).view<cell_type>();
 		for (auto v : irange(0, n_points))
 			cell_id[v] = cell_from_position(position[v]);
 		return cell_id;
@@ -136,7 +137,7 @@ private:
 		// init with initial order; 0 to n
 		boost::copy(irange(0, n_points), permutation.begin());
 		// branching-free lex sorting ftw
-		auto lex = [&](auto l, auto r) {return ((cell_id[l] - cell_id[r]).cast<int>() * strides).sum() > 0;};
+		auto lex = [&](auto l, auto r) {return ((cell_id[l] - cell_id[r]).cast<hash_type>() * strides).sum() > 0;};
 		// do the sort; boost::integer_sort might be preferable?
 		boost::sort(permutation, lex);
 		return permutation;
@@ -147,7 +148,7 @@ private:
 		ndarray<1, index_type> pivots({ n_points });
 
 		index_type n_pivots = 0;		//number of pivots
-		auto add_pivot = [&](auto b) {pivots[n_pivots++] = b;};
+		auto add_pivot = [&](auto p) {pivots[n_pivots++] = p;};
 
 		auto res = permutation
 			| transformed([&](auto i) {return cell_id[i];})
@@ -155,8 +156,8 @@ private:
 			| adjacent_filtered([](auto a, auto b) {return (a.value() != b.value()).any();})
 			| transformed([](auto i) {return i.index();});
 
-		for (auto i : res)
-			add_pivot(i);
+		for (auto p : res)
+			add_pivot(p);
 		if (n_pivots == n_points)
 			throw python_exception("every vertex is in its own cell; lengthscale probably needs to go way up");
 		add_pivot(n_points);

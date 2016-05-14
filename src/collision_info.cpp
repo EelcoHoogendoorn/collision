@@ -12,6 +12,15 @@
 #include "triangle_mesh.cpp"
 
 
+
+enum Action
+{
+    Ignore,
+    Overwrite,
+    Store
+};
+
+
 /*
 compute barycentric coords of origin-centered triangle along normal direction d
 */

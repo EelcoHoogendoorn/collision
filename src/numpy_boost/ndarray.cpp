@@ -5,8 +5,8 @@ defines numpy boost array types used
 
 #include <python.h>
 
-#include "typedefs.cpp"
 #include "numpy_boost_python.hpp"
+
 
 //using namespace boost::python;
 template <int N, typename T>

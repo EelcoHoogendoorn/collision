@@ -3,10 +3,9 @@ defines vector types
 */
 
 #pragma once
-#include "typedefs.cpp"
+
 #include <Eigen/Dense>
 #include <boost/range.hpp>
-
 
 
 template <typename T, int C>
