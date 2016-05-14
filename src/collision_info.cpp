@@ -48,12 +48,12 @@ std::tuple<const float3, const float3, const float> triangle_point_test(
 	const auto getbary   = [&](const _float3& normal){ return area_project(tvp, normal);};		//get bary, given a normal
 	const auto iterate   = [&](const _float3& bary)  { return getbary(getnormal(bary));};		//one iteration is a composition of the two
 
-	const  float  pou = 1.0/3;
+	const  float  pou = 1.0/3;          // start in the center of the triangle
 	const _float3 init(pou,pou,pou);
 
-	const _float3 bary   = iterate(iterate(init));			//two fixed point iterations seem to suffice
-	const _float3 normal = getnormal(bary).normalized();	//need normal to compute depth
-	const  float  depth  = (tvp * bary).dot(normal);		//compute depth along normal
+	const _float3 bary   = iterate(iterate(init));			// two fixed point iterations seem to suffice
+	const _float3 normal = getnormal(bary).normalized();	// need normal to compute depth
+	const  float  depth  = (tvp * bary).dot(normal);		// compute depth along normal
 
 	return std::make_tuple(bary, normal, depth);
 }

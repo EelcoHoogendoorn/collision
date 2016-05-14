@@ -5,7 +5,6 @@
 #include <functional>
 #include <algorithm>
 
-
 #include <boost/range.hpp>
 #include <boost/range/irange.hpp>
 #include <boost/range/combine.hpp>
@@ -140,7 +139,7 @@ private:
 		// init with initial order; 0 to n
 		boost::copy(irange(0, n_points), permutation.begin());
 		// branching-free lex sorting ftw
-		auto lex = [&](auto l, auto r) {return ((cell_id[l] - cell_id[r]).cast<hash_type>() * strides).sum() > 0;};
+		auto lex = [&](auto l, auto r) {return ((cell_id[l] - cell_id[r]).cast<hash_type>() * strides).sum() < 0;};
 		// do the sort; boost::integer_sort might be preferable?
 		boost::sort(permutation, lex);
 		return permutation;
@@ -175,7 +174,7 @@ protected:
 		return (v - extents.row(0)) / lengthscale;
 	}
 	inline cell_type cell_from_local_position(const vector_type& v) const {
-		return (v).cast<cell_type_scalar>();	// defacto floor
+		return v.cast<cell_type_scalar>();	// we want to round towards zero; surprised that we do not need a -0.5 for that..
 	}
 	inline cell_type cell_from_position(const vector_type& v) const {
 		return cell_from_local_position(transform(v));

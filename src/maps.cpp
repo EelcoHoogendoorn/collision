@@ -12,22 +12,23 @@
 #include "numpy_eigen/array.cpp"
 #include "numpy_boost/ndarray.cpp"
 
+//used for hashing calcs
+const std::array<int, 3> PRIMES = { 73856093, 19349663, 83492791 };
 
 
-template<class key_type, class value_type, int NDim>
+template<typename key_type, typename value_type, int NDim>
 class HashMap {
-	typedef int64 primes_type_scalar;
-	typename typedef key_type::Scalar key_type_scalar;
-	typedef RowArray<primes_type_scalar, NDim> primes_type;
-    //used for hashing calcs
-    const std::array<primes_type_scalar, 3> PRIMES = { 73856093, 19349663, 83492791 };
 
-	const primes_type primes;       // for hashing
-	const int n_items;              // number of items
-	const int n_entries;            // number of entries
-	const int mask;                 // bitmask for valid range
-	ndarray<key_type>    keys;      // voxel coordinates uniquely identifying a bucket
-	ndarray<value_type>  values;    // bucket description, or where to look in pivot array
+	typedef int64                                       primes_type_scalar;
+	typedef Eigen::Array<primes_type_scalar, 1, NDim>   primes_type;
+	typename typedef key_type::Scalar                   key_type_scalar;
+
+	const primes_type   primes;    // for hashing
+	const int           n_items;   // number of items
+	const int           n_entries; // number of entries
+	const int           mask;      // bitmask for valid range
+	ndarray<key_type>   keys;      // voxel coordinates uniquely identifying a bucket
+	ndarray<value_type> values;    // bucket description, or where to look in pivot array
 
 public:
 	// construct by zipping keys and values range
