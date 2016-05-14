@@ -38,7 +38,39 @@ def test_basic():
 
 
 def test_mesh():
-    pass
+    from collision.mesh import Mesh
+    mesh = Mesh.load_stl(r'part0.stl')
+    cmesh = Collision.Mesh(mesh.vertices, mesh.vertex_normals(), mesh.faces, float(mesh.edge_lengths().mean()))
+    boxes = cmesh.boxes.reshape(-1, 3, 2).transpose(0, 2, 1)
+    for box in boxes[:10]:
+        print(box)
+    vispy_plot(mesh)
 
-test_basic()
-test_performance()
+
+
+def vispy_plot(mesh):
+
+    from vispy import app, scene, io
+
+    # Prepare canvas
+    canvas = scene.SceneCanvas(keys='interactive', size=(800, 600), show=True)
+    canvas.measure_fps()
+
+    # Set up a viewbox to display the image with interactive pan/zoom
+    view = canvas.central_widget.add_view()
+
+    meshvis = scene.visuals.Mesh(
+        mesh.vertices * 100,
+        mesh.faces[:, ::-1],
+        shading='flat',
+        parent=view.scene)
+
+    # Create three cameras (Fly, Turntable and Arcball)
+    fov = 60.
+    cam1 = scene.cameras.FlyCamera(parent=view.scene, fov=fov, name='Fly')
+    view.camera = cam1
+
+    app.run()
+
+
+test_mesh()

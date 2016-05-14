@@ -67,7 +67,7 @@ public:
 			box.row(0).fill(+inf);
 			box.row(1).fill(-inf);
 
-			const triangle_type& triangle = triangles[t];
+			auto triangle = triangles[t];
 			for (auto i : boost::irange(0, 3))		//loop over all vertices incident to the triangle
 			{
 				auto v = triangle(i);

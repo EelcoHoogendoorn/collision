@@ -1,5 +1,8 @@
 
 rmdir /S /Q build
+del .\collision\Collision.pyd
+
+
 REM CALL "C:\Program Files (x86)\Microsoft Visual Studio 10.0\VC\bin\amd64\vcvars64.bat"
 set PY_VER=3.5
 set ARCH=64
