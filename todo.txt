@@ -9,8 +9,6 @@ only unhappy with pivots now
 
 allow creation of const views on ndarrays; they are currently array_refs
 
-lex-ordering is not n-dim compatible; need clever reduction; preferable compile-time
-
 overload register_type for complete ndarray typedefs
 
 update collisioninfo with all modern conveniences

@@ -33,12 +33,14 @@ cmake ../src -G"%GENERATOR_NAME%" ^
 	-DNUMPY_INCLUDE_DIR:PATH="%SP_DIR%/numpy/core/include" ^
     -DBOOST_ROOT:PATH="%CENV%/Library"
 
-
-cmake --build . --clean-first --target ALL_BUILD --config %BUILD_CONFIG%
-
 cd..
+
+cmake --build ./build --clean-first --target ALL_BUILD --config %BUILD_CONFIG%
+
+if %errorlevel% neq 0 exit /b %errorlevel%
+
 
 
 copy .\build\release\Collision.pyd .\collision
 
-REM python .\collision\test.py
+python .\collision\test.py

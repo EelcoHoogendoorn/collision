@@ -5,10 +5,12 @@
 #include <functional>
 #include <algorithm>
 
+
 #include <boost/range.hpp>
 #include <boost/range/irange.hpp>
 #include <boost/range/combine.hpp>
 #include <boost/range/algorithm.hpp>
+#include <boost/range/numeric.hpp>
 
 #include <boost/range/adaptor/indexed.hpp>
 #include <boost/range/adaptor/transformed.hpp>
@@ -49,6 +51,7 @@ public:
     typedef Eigen::Array<vector_type_scalar, 2, NDim> extents_type;
     typedef Eigen::Array<vector_type_scalar, 1, NDim> vector_type;
     typedef Eigen::Array<cell_type_scalar,   1, NDim> cell_type;
+    typedef Eigen::Array<int,                1, NDim> strides_type;
 
 	const ndarray<1, const float3>  position;    //  positions
 	const index_type                n_points;
@@ -56,7 +59,7 @@ public:
 
     const extents_type              extents;     // maximum extent of pointcloud; used to map coordinates to positive integers
 	const cell_type                 size;        // number of virtual buckets in each direction; used to prevent out-of-bound lookup
-
+	const strides_type              strides;     // for lex-ranking cells
 public:
 	ndarray<2, cell_type_scalar>   _cell_id; // the cell coordinates a vertex resides in
 	const ndarray<1, const cell_type>   cell_id; // the cell coordinates a vertex resides in
@@ -86,6 +89,7 @@ public:
 		lengthscale (lengthscale),
 		extents     (init_extents()),
 		size        (init_size()),
+		strides     (init_strides()),
 		_cell_id    ({ n_points, NDim }),
 		cell_id     (init_cells()),
 		indices     (init_indices()),
@@ -103,8 +107,8 @@ public:
 	}
 
 private:
-	//determine extents of data, return size
-	const extents_type init_extents() const
+	//determine extents of data
+	extents_type init_extents() const
 	{
 	    extents_type ext;
 		ext.row(0).fill(+std::numeric_limits<vector_type_scalar>::infinity());
@@ -116,9 +120,18 @@ private:
 		}
 		return ext;
 	}
-
+    // integer size of the domain
 	cell_type init_size() const {
 	    return transform(extents.row(1) - extents.row(0)).cast<cell_type_scalar>() + 1;	// use +0.5 before cast?
+	}
+
+	strides_type init_strides() const {
+//		boost::partial_sum(size.cast<int>(), begin(strides), std::multiplies<int>());   // doesnt work somehow
+        strides_type strides;
+        strides(0) = 1;
+		for (auto i : irange(1, NDim))
+			strides(i) = strides(i-1) * size(i-1);
+		return strides;
 	}
 
 	// determine grid cells
@@ -131,19 +144,16 @@ private:
 			cidx[v] = cell_from_position(position[v]);
 	    return _cell_id.view<const cell_type>();
 	}
-	//finds the index vector that puts the vertices in a lexographically sorted order
+	// finds the index vector that puts the vertices in a lexographically sorted order
 	ndarray<1, index_type> init_indices() const
 	{
-		//create index array, based on lexographical ordering
+		// create index array, based on lexographical ordering
 	    ndarray<1, index_type> idx({n_points});
+	    // init with initial order; 0 to n
 		boost::copy(irange(0, n_points), idx.begin());
-
-        const Eigen::Array<int, 1, NDim> order = {4, 2, 1};
-		// take the sign of a eigen vector type per component
-		auto sign = [](auto x) {return (x > 0).cast<int>() - (x < 0).cast<int>();};
-        // lex sorting functor
-		auto lex = [&](auto l, auto r) {return (sign(cell_id[l] - cell_id[r]) * order).sum() > 0;};
-
+        // branching-free lex ordering
+		auto lex = [&](auto l, auto r) {return ((cell_id[l] - cell_id[r]).cast<int>() * strides).sum() > 0;};
+        // do the sort; boost::integer_sort might be preferable?
 		boost::sort(idx, lex);
 		return idx;//.view<index_type>();
 	}
@@ -159,15 +169,8 @@ private:
                     | adjacent_filtered([](auto a, auto b){return (a.value() != b.value()).any();})
                     | transformed([](auto i){return i.index();});
 
-//		add_pivot(0);
         for (auto i : res)
 			add_pivot(i);
-//		for (const int i: irange(1, n_points))
-//			if ((cell_id[indices[i]] != cell_id[indices[i-1]]).any())
-//		    {
-//			    std::cout << cell_id[indices[i-1]].row(0) << std::endl;
-//				add_pivot(i);
-//			}
 		add_pivot(n_points);
 
 		if (np >= n_points)
@@ -175,7 +178,6 @@ private:
 
 //        int_1::extent_gen extents;
 //        pivots.view(boost::extents[np - 1]);;;
-		std::cout << "last line of init_pivots" << std::endl;
 
 		return np - 1;
 	}
