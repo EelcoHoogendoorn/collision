@@ -55,7 +55,7 @@ public:
 	typedef Eigen::Array<cell_type_scalar, 1, NDim>     cell_type;
 	typedef Eigen::Array<hash_type, 1, NDim>            strides_type;
 
-	const ndarray<1, vector_type>   position;    // positions
+	const ndarray<vector_type>      position;    // positions
 	const index_type                n_points;    // number of points
 	const vector_type_scalar        lengthscale; // size of a virtual voxel
 
@@ -63,9 +63,9 @@ public:
 	const cell_type                 shape;       // number of virtual buckets in each direction; used to prevent out-of-bound lookup
 	const strides_type              strides;     // for lex-ranking cells
 public:
-	const ndarray<1, cell_type>     cell_id;     // the cell coordinates a vertex resides in
-	const ndarray<1, index_type>    permutation; // index array mapping the vertices to lexographically sorted order
-	const ndarray<1, index_type>    pivots;	     // boundaries between buckets of cells as viewed under permutation
+	const ndarray<cell_type>        cell_id;     // the cell coordinates a vertex resides in
+	const ndarray<index_type>       permutation; // index array mapping the vertices to lexographically sorted order
+	const ndarray<index_type>       pivots;	     // boundaries between buckets of cells as viewed under permutation
 	const index_type                n_buckets;   // number of cells
 
 	const HashMap<cell_type, index_type, NDim> bucket_from_cell; // maps cell coordinates to bucket index
@@ -73,12 +73,12 @@ public:
 public:
 	//interface methods
 	auto get_permutation() const { return this->permutation; }
-	void set_permutation(ndarray<1, index_type> permutation) { int a = 3; }
+	void set_permutation(ndarray<index_type> permutation) { int a = 3; }
 	auto get_pivots() const { return this->pivots; }
-	void set_pivots(ndarray<1, index_type> pivots) { int a = 3; }
+	void set_pivots(ndarray<index_type> pivots) { int a = 3; }
 
 	// grid constructor
-	explicit VertexGridHash(ndarray<2, vector_type_scalar> position, vector_type_scalar lengthscale) :
+	explicit VertexGridHash(ndarray<vector_type_scalar, 2> position, vector_type_scalar lengthscale) :
 		position	(position.view<vector_type>()),
 		n_points	(position.size()),
 		lengthscale	(lengthscale),
@@ -126,14 +126,14 @@ private:
 	// determine grid cells
 	auto init_cells() const {
 		// silly indirection, because we cannot yet allocate custom type directly
-		auto cell_id = ndarray<2, cell_type_scalar>({ n_points, NDim }).view<cell_type>();
+		auto cell_id = ndarray<cell_type_scalar, 2>({ n_points, NDim }).view<cell_type>();
 		for (auto v : irange(0, n_points))
 			cell_id[v] = cell_from_position(position[v]);
 		return cell_id;
 	}
 	// finds the index vector that puts the vertices in a lexographically sorted order
 	auto init_permutation() const {
-		ndarray<1, index_type> permutation({ n_points });
+		ndarray<index_type> permutation({ n_points });
 		// init with initial order; 0 to n
 		boost::copy(irange(0, n_points), permutation.begin());
 		// branching-free lex sorting ftw
@@ -145,7 +145,7 @@ private:
 	//divide the sorted vertices into buckets, containing vertices in the same virtual voxel
 	auto init_pivots() const {
 		// allocate array of size n_points, becuase it plays nicely with the rest of our numpy mempool
-		ndarray<1, index_type> pivots({ n_points });
+		ndarray<index_type> pivots({ n_points });
 
 		index_type n_pivots = 0;		//number of pivots
 		auto add_pivot = [&](auto p) {pivots[n_pivots++] = p;};

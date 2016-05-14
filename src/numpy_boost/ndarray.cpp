@@ -9,7 +9,7 @@ defines numpy boost array types used
 
 
 // make ndarray subclass of numpy_boost?
-template <int N, typename T>
+template <typename T, int N=1>
 using ndarray = numpy_boost<T, N>;
 
 

@@ -26,8 +26,8 @@ class HashMap {
 	const int n_items;              // number of items
 	const int n_entries;            // number of entries
 	const int mask;                 // bitmask for valid range
-	ndarray<1, key_type>    keys;   // voxel coordinates uniquely identifying a bucket
-	ndarray<1, value_type>  values; // bucket description, or where to look in pivot array
+	ndarray<key_type>    keys;      // voxel coordinates uniquely identifying a bucket
+	ndarray<value_type>  values;    // bucket description, or where to look in pivot array
 
 public:
 	// construct by zipping keys and values range
@@ -85,11 +85,11 @@ private:
 	}
 
 	auto init_keys() const {
-		return ndarray<2, key_type_scalar>({n_entries, NDim}).view<key_type>();
+		return ndarray<key_type_scalar, 2>({n_entries, NDim}).view<key_type>();
 	}
 
 	auto init_values() const {
-		ndarray<1, value_type> values({n_entries});
+		ndarray<value_type> values({n_entries});
 		fill(values, -1); 		//mark grid as unoccupied
 		return values;
 	}

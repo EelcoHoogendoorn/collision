@@ -17,8 +17,14 @@ only handles precompute of bounding boxes really,
 but these may be needed many times per timestep
 should we iteratively deform the mesh along its normals, implementing normal calcs here would make sense too
 */
+
+template <typename real_type>
 class TriangleMesh{
 public:
+
+    typedef Eigen::Array<real_type, 2, 3> vector_type;
+    typedef Eigen::Array<real_type, 2, 3> box_type;
+
 	float_2 position;
 	float_2 normal;
 	int_2 incidence;
