@@ -1,16 +1,17 @@
 #pragma once
 
 #include <iostream>
-#include <boost/range/irange.hpp>
 #include <math.h>
 #include <algorithm>
 #include <tuple>
 
-#include "linalg.cpp"
-#include "ndarray.cpp"
+#include <boost/range/irange.hpp>
+
+#include "typedefs.cpp"
+#include "numpy_eigen/array.cpp"
+#include "numpy_boost/ndarray.cpp"
 #include "interaction_map.cpp"
 #include "triangle_mesh.cpp"
-
 
 
 enum Action
@@ -21,119 +22,120 @@ enum Action
 };
 
 
-/*
-compute barycentric coords of origin-centered triangle along normal direction d
-*/
-inline _float3 area_project(const _float33& s, const _float3& d)
-{
-	const _float3 r(
-		d.dot(s.col(1).cross(s.col(2))),
-		d.dot(s.col(2).cross(s.col(0))),
-		d.dot(s.col(0).cross(s.col(1)))
-		);
-	return r / r.sum();
-}
-
-
-/*
-iterative intersection algorithm on a point versus a triangle swept along its triangle normals
-returns bary, normal and depth
-tvp are triangle vertex positions relative to origin point
-tvn are triangle vertex normals
-*/
-std::tuple<const float3, const float3, const float> triangle_point_test(
-	const _float33& tvp, const _float33& tvn)
-{
-	const auto getnormal = [&](const _float3& bary)  { return tvn * bary;};						//get normal, given a bary
-	const auto getbary   = [&](const _float3& normal){ return area_project(tvp, normal);};		//get bary, given a normal
-	const auto iterate   = [&](const _float3& bary)  { return getbary(getnormal(bary));};		//one iteration is a composition of the two
-
-	const  float  pou = 1.0/3;          // start in the center of the triangle
-	const _float3 init(pou,pou,pou);
-
-	const _float3 bary   = iterate(iterate(init));			// two fixed point iterations seem to suffice
-	const _float3 normal = getnormal(bary).normalized();	// need normal to compute depth
-	const  float  depth  = (tvp * bary).dot(normal);		// compute depth along normal
-
-	return std::make_tuple(bary, normal, depth);
-}
-
 
 /*
 class to handle interactions between a triangle mesh and a pointcloud
 make this a method of grid?
 */
+template<typename grid_type, typename mesh_type>
 class CollisionInfo {
 
 public:
-	const VertexGridHash& vg;
-	const TriangleMesh& tm;
+
+    typedef int32 index_type;
+    typedef float32 real;
+    typedef Eigen::Array<real, 1, 3> real3;
+    typedef Eigen::Array<real, 3, 3> real33;
+    typedef Eigen::Matrix<real, 1, 3> _real3;
+    typedef Eigen::Matrix<real, 3, 3> _real33;
+    typedef Eigen::Array<index_type, 1, 3> triangle_type;
+
+
+	const grid_type& vg;
+	const mesh_type& tm;
 
 	//precomputed collision properties
-	float_2 bary;
-	float_2 normal;
-	float_1 depth;
-	int_1 triangle;
+	ndarray<real3> bary;
+	ndarray<real3> normal;
+	ndarray<real> depth;
+	ndarray<index_type> triangle;
 
-	int count;		//number of collisions found
+	index_type count;		//number of collisions found
 	const bool self_intersect;
 
     // property interface
-	float_2 get_bary(){return this->bary;}
-	void set_bary(float_2 bary){this->bary = bary;}
-	float_2 get_normal(){return this->normal;}
-	void set_normal(float_2 normal){this->normal = normal;}
-	float_1 get_depth(){return this->depth;}
-	void set_depth(float_1 depth){this->depth = depth;}
-	int_1 get_triangle(){return this->triangle;}
-	void set_triangle(int_1 triangle){this->triangle = triangle;}
+	ndarray<real3> get_bary(){return bary.unview<real>();}
+	void set_bary(ndarray<real3> bary){}
+	ndarray<real3> get_normal(){return normal.unview<real>();}
+	void set_normal(ndarray<real3> normal){}
+	ndarray<real> get_depth(){return depth;}
+	void set_depth(ndarray<real> depth){}
+	ndarray<index_type> get_triangle(){return triangle;}
+	void set_triangle(ndarray<index_type> triangle){}
 
 
 	//construct from vertex count alone
-	CollisionInfo(VertexGridHash& vg, TriangleMesh& tm, const bool self_intersect):
+	explicit CollisionInfo(grid_type& vg, mesh_type& tm, const bool self_intersect):
 		vg(vg), tm(tm),
-		bary    ({vg.n_vertices, 3}),
-		normal  ({vg.n_vertices, 3}),
-		depth   ({vg.n_vertices}),
-		triangle({vg.n_vertices}),
+		bary    ({vg.n_points}),
+		normal  ({vg.n_points}),
+		depth   ({vg.n_points}),
+		triangle({vg.n_points}),
 		count   (-1),
 		self_intersect(self_intersect)
 	{
 		fill(triangle, -1);
+		triangles_versus_points();
 	}
+
+
+    /*
+    compute barycentric coords of origin-centered triangle along normal direction d
+    */
+    static inline auto area_project(const _real33& s, const _real3& d) {
+        const _real3 r(
+            d.dot(s.col(1).cross(s.col(2))),
+            d.dot(s.col(2).cross(s.col(0))),
+            d.dot(s.col(0).cross(s.col(1)))
+            );
+        return r / r.sum();
+    }
+
+    /*
+    iterative intersection algorithm on a point versus a triangle swept along its triangle normals
+    returns bary, normal and depth
+    tvp are triangle vertex positions relative to origin point
+    tvn are triangle vertex normals
+    */
+    static auto triangle_point_test(const _real33& tvp, const _real33& tvn)
+    {
+        auto getnormal = [&](const _real3& bary)  { return tvn * bary;};						//get normal, given a bary
+        auto getbary   = [&](const _real3& normal){ return area_project(tvp, normal);};		//get bary, given a normal
+        auto iterate   = [&](const _real3& bary)  { return getbary(getnormal(bary));};		//one iteration is a composition of the two
+
+        const real pou = 1.0/3;          // start in the center of the triangle
+        const _real3 init(pou,pou,pou);
+
+        const _real3 bary   = iterate(iterate(init));		// two fixed point iterations seem to suffice
+        const _real3 normal = getnormal(bary).normalized();	// need normal to compute depth
+        const  real  depth  = (tvp * bary).dot(normal);		// compute depth along normal
+
+        return std::make_tuple(bary, normal, depth);
+    }
+
 
 	//apply body to each contact pair
 	//body signature is (vertexindex, triangleindex) -> void
 	template <class F>
-	void for_each_contact(const F& body) const
-	{
-		for (const int v: boost::irange(0, vg.n_vertices))
+	void for_each_contact(const F& body) const {
+	    for (auto p: boost::irange(0, vg.n_points))
 		{
-			const int t = triangle[v];
-			if (t==-1) continue;	//skip unpaired vertices
-			body(v, t);
+			auto t = triangle[p];
+			if (t==-1) continue;	//skip unpaired points
+			body(p, t);
 		}
 	}
 
 	//wrap bounding box iterator, adding in triangle-awareness
 	template <class F>
-	void for_each_vertex_in_triangle(const int t, const F& body) const
-	{
-		vg.for_each_vertex_in_bounding_box(
-			tm.bbmin.range<const float3>()[t],
-			tm.bbmax.range<const float3>()[t],
-			[&](const int v){body(v);}
-		);
+	void for_each_vertex_in_triangle(index_type t, F& body) const {
+		vg.for_each_vertex_in_bounding_box(tm.boxes[t], body);
 	}
+
 	//wrap bounding box iterator, adding in triangle-awareness
 	template <class F>
-	void for_each_vertex_in_triangle_naive(const int t, const F& body) const
-	{
-		vg.for_each_vertex_in_bounding_box_naive(
-			tm.bbmin.range<const float3>()[t],
-			tm.bbmax.range<const float3>()[t],
-			[&](const int v){body(v);}
-		);
+	void for_each_vertex_in_triangle_naive(index_type t, F& body) const {
+		vg.for_each_vertex_in_bounding_box_naive(tm.boxes[t], body);
 	}
 
 	/*
@@ -144,25 +146,15 @@ public:
 	void for_each_pair(const F& body)
 	{
 		CollisionInfo& ci = *this;
-		auto& tm = ci.tm;
-
-		auto tm_incidence	= tm.incidence	.range<const int3>();;
-		auto tm_position	= tm.position	.range<const float3>();
-		auto tm_normal		= tm.normal		.range<const float3>();
-
-		auto ci_bary		= ci.bary		.range<float3>();		//mutable output arrays
-		auto ci_normal		= ci.normal		.range<float3>();
-		auto ci_depth		= ci.depth		.range<float>();
-		auto ci_triangle	= ci.triangle	.range<int>();
 
 		ci.count = 0;			//initialize number of interactions
 
-		for (const int t: boost::irange(0, tm.triangles))		//loop over triangles
+		for (auto t: boost::irange(0, tm.n_triangles))		//loop over triangles
 		{
 			//some mutable optimizations
 			bool loaded = false;
-			int3 tvi;
-			float33 tvp, tvn;
+			triangle_type tvi;
+			real33 tvp, tvn;
 
 			//loop over all vertices in bounding box of triangle;
 			ci.for_each_vertex_in_triangle(t, [&](const int v)
@@ -171,31 +163,31 @@ public:
 				{
 					//read triangle into local mem matrix for efficient geometry computations
 					//only needed if we hit a vertex at all
-					tvi = tm_incidence[t];
-					for (const int i: boost::irange(0, 3))
+					tvi = tm.triangles[t];
+					for (auto i: boost::irange(0, 3))
 					{
-						const int v = tvi[i];
-						tvp.col(i) = tm_position[v];
-						tvn.col(i) = tm_normal[v];
+						auto v = tvi[i];
+						tvp.col(i) = tm.position[v];
+						tvn.col(i) = tm.normal[v];
 					}
 					loaded = true;
 				}
 
 				//skip vertex-conflicts on self intersections
-				if (ci.self_intersect) if ((tvi==v).any()) return;
+				if (ci.self_intersect) if ((tvi == v).any()) return;
 
 				//call the body; this tells us what to think of this triangle-vertex pair
 				const auto ret = body(t, v, tvp, tvn);
 				const Action action = std::get<0>(ret);
 
-				if (action==Action::Ignore) return;
-				if (action==Action::Store) ci.count += 1;			//register novel interaction
+				if (action == Action::Ignore) return;
+				if (action == Action::Store) ci.count += 1;			//register novel interaction
 
 				//store the result
-				ci_triangle[v] = t;
-				std::tie(ci_bary  [v],
-						 ci_normal[v],
-						 ci_depth [v]) = std::get<1>(ret);		//ret is a tuple of tuples...
+				ci.triangle[v] = t;
+				std::tie(ci.bary  [v],
+						 ci.normal[v],
+						 ci.depth [v]) = std::get<1>(ret);		//ret is a tuple of tuples...
 			});
 		}
 	}
@@ -204,21 +196,16 @@ public:
     /* collide vertexgrid and trianglemesh, building up collision info */
     void triangles_versus_points()
     {
-        auto vg_position	= vg.position	.range<const float3>();
-
-        auto ci_depth		= depth		    .range<const float>();
-        auto ci_triangle	= triangle	    .range<const int>();
-
         for_each_pair([&]	//loop over all nearby triangle-vertex pairs
         (
             const int t, const int v,
-            const float33& tvp, const float33& tvn					//triangle vertex positions and normals
+            const real33& tvp, const real33& tvn					//triangle vertex positions and normals
         )
         {
             //intersect translated triangle, and unpack results
             const auto   intersection = triangle_point_test(tvp.colwise()-vg_position[v], tvn);
-            const float3 bary		  = std::get<0>(intersection);
-            const float  depth        = std::get<2>(intersection);
+            const real3 bary		  = std::get<0>(intersection);
+            const real  depth         = std::get<2>(intersection);
 
             //decide what to do with the intersection result?
             const Action action =
@@ -226,9 +213,9 @@ public:
                 depth < -2*tm.thickness ||
                 (bary < 0).any() ?
                     Action::Ignore:									//if out of bounds, ignore
-                    ci_triangle[v] == -1 ?							//check for novelty
+                    ci.triangle[v] == -1 ?							//check for novelty
                         Action::Store :								//if novel, store
-                        depth*depth < ci_depth[v]*ci_depth[v] ?		//check for superiority
+                        depth*depth < ci.depth[v]*ci.depth[v] ?		//check for superiority
                             Action::Overwrite:						//if superior, overwrite
                             Action::Ignore;
 
@@ -240,14 +227,14 @@ public:
 	void unit_test()
 	{
 		//test triangle iteration and lookup
-		for (const int t: boost::irange(0, tm.triangles))
+		for (auto t: boost::irange(0, tm.n_triangles))
 		{
 			std::vector<int> clever;
-			for_each_vertex_in_triangle      (t, [&](const int v){clever.push_back(v);});
+			for_each_vertex_in_triangle      (t, [&](auto v){clever.push_back(v);});
 			boost::sort(clever);
 
 			std::vector<int> naive;
-			for_each_vertex_in_triangle_naive(t, [&](const int v){naive.push_back(v);});
+			for_each_vertex_in_triangle_naive(t, [&](auto v){naive.push_back(v);});
 			boost::sort(naive);
 
 			if (!boost::equal(clever, naive))
@@ -267,6 +254,6 @@ public:
 };
 
 
-// dont remember why this indicetion for the accessors was necessary..
-const VertexGridHash& get_vertexgrid  (CollisionInfo& ci){return ci.vg;}
-const TriangleMesh&   get_trianglemesh(CollisionInfo& ci){return ci.tm;}
+//// dont remember why this indicetion for the accessors was necessary..
+//const VertexGridHash& get_vertexgrid  (CollisionInfo& ci){return ci.vg;}
+//const TriangleMesh&   get_trianglemesh(CollisionInfo& ci){return ci.tm;}

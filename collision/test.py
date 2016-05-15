@@ -2,6 +2,8 @@ import numpy as np
 
 
 import Collision
+from collision.mesh import Mesh, icosphere
+
 import time
 
 def test_performance():
@@ -38,14 +40,18 @@ def test_basic():
 
 
 def test_mesh():
-    from collision.mesh import Mesh
     mesh = Mesh.load_stl(r'part0.stl')
     cmesh = Collision.Mesh(mesh.vertices, mesh.vertex_normals(), mesh.faces, float(mesh.edge_lengths().mean()))
     boxes = cmesh.boxes.reshape(-1, 3, 2).transpose(0, 2, 1)
     for box in boxes[:10]:
         print(box)
+    mesh = icosphere(0.5, refinement=3)
     vispy_plot(mesh)
 
+
+def test_collision():
+    mesh = icosphere(0.5, refinement=3)
+    mesh = icosphere(0.5, [1, 0, 0], refinement=3)
 
 
 def vispy_plot(mesh):

@@ -253,22 +253,26 @@ def triangulate_convex(vertices):
     return Mesh(vertices, hull.simplices)#.fix_orientation().fix_curvature()
 
 
-def refine_sphere(mesh):
+def refine_sphere(sphere):
     """given a spherical mesh, insert a new vertex on every edge
 
     Parameters
     ----------
-    mesh : skcg.Mesh instance
+    sphere : skcg.Mesh instance
 
     Returns
     -------
     skcg.Mesh instance
     """
-    vertices = mesh.vertices
-    edges = npi.unique(np.sort(mesh.edges, axis=2).reshape(-1, 2))
+    vertices = sphere.vertices
+    edges = npi.unique(sphere.ordered_edges())
     new_vertices = vertices[edges].mean(axis=1)
     new_vertices /= np.linalg.norm(new_vertices, axis=1, keepdims=True)
-    return triangulate_convex(np.concatenate((vertices, new_vertices)))
+    sphere = triangulate_convex(np.concatenate((vertices, new_vertices)))
+    direction = collision.math.dot(sphere.face_normals(), sphere.face_centroids()) > 0
+    faces = np.where(direction[:, None], sphere.faces[:, ::+1], sphere.faces[:, ::-1])
+    sphere = Mesh(sphere.vertices, faces)
+    return sphere
 
 
 def icosphere(radius=1, position=(0, 0, 0), refinement=1):

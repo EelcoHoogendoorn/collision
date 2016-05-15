@@ -61,7 +61,7 @@ public:
 
 		ndarray<box_type> boxes(ndarray<real_type, 2>({ n_triangles, 6 }).view<box_type>());
 
-		for (const int t : boost::irange(0, n_triangles))	//loop over all triangles
+		for (auto t : boost::irange(0, n_triangles))	//loop over all triangles
 		{
 			box_type& box = boxes[t];
 			box.row(0).fill(+inf);
@@ -81,6 +81,11 @@ public:
 		}
 		return boxes;
 	}
+
+    // map the vertices of this mesh to a point grid
+//    Grid3d get_point_grid() const {
+//        return Grid3d(vertices);
+//    }
 
 	ndarray<real_type, 2> get_boxes() { return boxes.unview<real_type>(); }
 	void set_boxes(ndarray<real_type, 2> b) { int a = 3; }

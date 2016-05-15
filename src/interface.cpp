@@ -8,11 +8,14 @@ boost python interface definition
 #include "numpy_boost/exception.cpp"
 #include "interaction_map.cpp"
 #include "triangle_mesh.cpp"
+#include "collision_info.cpp"
 
 typedef PointGrid<float32, int16, 2> Grid2d;
 typedef PointGrid<float32, int16, 3> Grid3d;
 
 typedef TriangleMesh<float32> Mesh;
+
+typedef CollisionInfo<Grid3d, Mesh> Info;
 
 
 
@@ -49,6 +52,10 @@ BOOST_PYTHON_MODULE(Collision)
 
 	class_<Mesh>("Mesh", init<ndarray<float32, 2>, ndarray<float32, 2>, ndarray<int32, 2>, float32>())
 		.add_property("boxes",      &Mesh::get_boxes, &Mesh::set_boxes)
+		;
+
+	class_<Info>("Info", init<Grid3d&, Mesh&, bool>())
+		.add_property("depth",      &Info::get_depth, &Info::set_depth)
 		;
 
 	register_exception_translator<python_exception>(&translate);
