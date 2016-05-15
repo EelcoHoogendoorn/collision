@@ -50,7 +50,7 @@ class PointGrid {
 public:
 	typedef int32 index_type;       // 32 bit int is a fine size type; 4 billion points isnt very likely
 	typedef int64 hash_type;
-	typedef Eigen::Array<real_type,  2, NDim>	extents_type;
+	typedef Eigen::Array<real_type,  2, NDim>	box_type;
 	typedef Eigen::Array<real_type,  1, NDim>	vector_type;
 	typedef Eigen::Array<fixed_type, 1, NDim>	cell_type;
 	typedef Eigen::Array<hash_type,  1, NDim>	strides_type;
@@ -60,7 +60,7 @@ public:
 	const index_type                n_points;    // number of points
 	const real_type                 lengthscale; // size of a virtual voxel
 
-	const extents_type              extents;     // maximum extent of pointcloud; used to map coordinates to positive integers
+	const box_type                  extents;     // maximum extent of pointcloud; used to map coordinates to positive integers
 	const cell_type                 shape;       // number of virtual buckets in each direction; used to prevent out-of-bound lookup
 	const strides_type              strides;     // for lex-ranking cells
 public:
@@ -105,7 +105,7 @@ private:
 	//determine extents of data
 	auto init_extents() const {
 		auto inf = std::numeric_limits<real_type>::infinity();
-		extents_type extents;
+		box_type extents;
 		extents.row(0).fill(+inf);
 		extents.row(1).fill(-inf);
 		for (auto p : position) {
@@ -216,8 +216,11 @@ public:
 
 	//loop over bounding box and apply body
 	template <class F>
-	void for_each_vertex_in_bounding_box(const vector_type& gmin, const vector_type& gmax, const F& body) const
+	void for_each_vertex_in_bounding_box(const box_type& box, const F& body) const
 	{
+	    auto gmin = box.row(0);
+	    auto gmax = box.row(1);
+
 		const auto in_box = [&](auto v)
 		{
 			const vector_type& vp = position[v];
@@ -231,7 +234,7 @@ public:
 		if ((lmin.max(vector_type(0, 0, 0)) > lmax.min(shape.cast<real_type>())).any()) return;
 
 		//compute local cell coords; constrain to [0-shape)
-		const cell_type lb = cell_from_local_position(lmin).max(cell_type(0, 0, 0));
+		const cell_type lb =  cell_from_local_position(lmin).max(cell_type(0, 0, 0));
 		const cell_type ub = (cell_from_local_position(lmax) + 1).min(shape);
 
 		//loop over all cells that intersect with bb
@@ -244,15 +247,15 @@ public:
 	}
 	//for unit testing purposes
 	template <class F>
-	void for_each_vertex_in_bounding_box_naive(const vector_type& gmin, const vector_type& gmax, const F& body) const
+	void for_each_vertex_in_bounding_box_naive(const box_type& box, const F& body) const
 	{
 		const auto in_box = [&](auto v)
 		{
 			const vector_type& vp = position[v];
-			return !((vp < gmin).any() || (vp > gmax).any());
+			return !((vp < box.row(0)).any() || (vp > box.row(1)).any());
 		};
 
-		if ((gmin > extents.row(1)).any() || (gmax < extents.row(0)).any()) return;
+		if ((box.row(0) > extents.row(1)).any() || (box.row(1) < extents.row(0)).any()) return;
 
 		for (auto v : irange(0, n_points))
 			if (in_box(v))

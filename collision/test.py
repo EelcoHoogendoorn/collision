@@ -1,7 +1,7 @@
 import numpy as np
 
 
-import Collision
+from collision import Collision
 from collision.mesh import Mesh, icosphere
 
 import time
@@ -41,7 +41,8 @@ def test_basic():
 
 def test_mesh():
     mesh = Mesh.load_stl(r'part0.stl')
-    cmesh = Collision.Mesh(mesh.vertices, mesh.vertex_normals(), mesh.faces, float(mesh.edge_lengths().mean()))
+    normals = mesh.vertex_normals()
+    cmesh = Collision.Mesh(mesh.vertices, normals, mesh.faces, float(mesh.edge_lengths().mean()))
     boxes = cmesh.boxes.reshape(-1, 3, 2).transpose(0, 2, 1)
     for box in boxes[:10]:
         print(box)
@@ -50,8 +51,16 @@ def test_mesh():
 
 
 def test_collision():
-    mesh = icosphere(0.5, refinement=3)
-    mesh = icosphere(0.5, [1, 0, 0], refinement=3)
+    meshes = [icosphere(0.5, refinement=3), icosphere(0.5, [1, 0, 0], refinement=3)]
+    lengthscale = 0.05
+    grids = [Collision.Grid3d(m.vertices, lengthscale) for m in meshes]
+    ctmeshes = [Collision.Mesh(m.vertices, m.vertex_normals(), m.faces, lengthscale) for m in meshes]
+    quit()
+    for i, mi in enumerate(meshes):
+        for j, mj in enumerate(meshes):
+            if i == j: break
+            info = Collision.Info(grids[i], ctmeshes[j])
+            print(info.depth)
 
 
 def vispy_plot(mesh):
