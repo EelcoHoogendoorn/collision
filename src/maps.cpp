@@ -22,7 +22,7 @@ class HashMap {
 
 	typedef int                                       primes_type_scalar;
 	typedef Eigen::Array<primes_type_scalar, 1, NDim>   primes_type;
-	typedef typename key_type::Scalar                   key_type_scalar;
+	typedef int16                   key_type_scalar;
 
 	const primes_type   primes;    // for hashing
 	const int           n_items;   // number of items

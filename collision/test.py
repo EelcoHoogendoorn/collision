@@ -7,13 +7,13 @@ import time
 def test_performance():
     # warmup run for mem allocation
     lengthscale = 0.03
-    points = np.random.rand(3000000, 3).astype(np.float32)
-    grid = Collision.Grid3d(points, lengthscale)
+    points = np.random.rand(300000, 3).astype(np.float32)
+    grid = Collision.Grid3d(points, (lengthscale))
 
     # run on unsorted data
-    points = np.random.rand(3000000, 3).astype(np.float32)
+    points = np.random.rand(300000, 3).astype(np.float32)
     start = time.clock()
-    grid = Collision.Grid3d(points, lengthscale)
+    grid = Collision.Grid3d(points, (lengthscale))
     unsorted = time.clock() - start
 
     # sort data
@@ -65,7 +65,6 @@ def vispy_plot(mesh):
         shading='flat',
         parent=view.scene)
 
-    # Create three cameras (Fly, Turntable and Arcball)
     fov = 60.
     cam1 = scene.cameras.FlyCamera(parent=view.scene, fov=fov, name='Fly')
     view.camera = cam1
@@ -73,4 +72,4 @@ def vispy_plot(mesh):
     app.run()
 
 
-test_performance()
+test_mesh()

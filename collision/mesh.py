@@ -214,3 +214,84 @@ class Mesh(PolyData):
 
         vertices, triangles = npi.unique(data['vertex'].reshape(-1, 3), return_inverse=True)
         return Mesh(vertices, triangles.reshape(-1, 3))
+
+
+def icosahedron():
+    """
+    Generate a icosahedron.
+
+    Returns
+    -------
+    mesh: Mesh
+    """
+    t = (1 + np.sqrt(5)) / 2
+    norm_f = np.sqrt(t**2 + 1)
+
+    a = np.array([-1, 1, -1, 1]) / norm_f
+    b = np.array([t, t, -t, -t]) / norm_f
+    c = np.zeros(4)
+
+    vertices_part = np.array([a, b, c]).reshape((3, 4)).T
+    vertices = np.array([np.roll(vertices_part, shift, axis=1) for shift in range(3)]).reshape((12, 3))
+
+    return triangulate_convex(vertices)
+
+
+def triangulate_convex(vertices):
+    """triangulate a convex set of vertices
+
+    Parameters
+    ----------
+    vertices : ndarray, [n, 3], float
+        convex set of vertices
+
+    Returns
+    -------
+    skcg.Mesh instance, with outward-pointing normals
+    """
+    hull = scipy.spatial.ConvexHull(vertices)
+    return Mesh(vertices, hull.simplices)#.fix_orientation().fix_curvature()
+
+
+def refine_sphere(mesh):
+    """given a spherical mesh, insert a new vertex on every edge
+
+    Parameters
+    ----------
+    mesh : skcg.Mesh instance
+
+    Returns
+    -------
+    skcg.Mesh instance
+    """
+    vertices = mesh.vertices
+    edges = npi.unique(np.sort(mesh.edges, axis=2).reshape(-1, 2))
+    new_vertices = vertices[edges].mean(axis=1)
+    new_vertices /= np.linalg.norm(new_vertices, axis=1, keepdims=True)
+    return triangulate_convex(np.concatenate((vertices, new_vertices)))
+
+
+def icosphere(radius=1, position=(0, 0, 0), refinement=1):
+    """
+    generate an icosphere. Naively generating a sphere with sin and cos will cause the vertices to have an
+    inhomogeneous distribution over the sphere surface. An icosphere avoids this.
+
+    Parameters
+    ----------
+    radius: (optional) float
+        the radius of the sphere being generated. The default value is 1
+    position: (optional) tuple, (float, float)
+        the position of the sphere. The default value is (0, 0, 0)
+    refinement: int
+        higher refinement will cause the mesh to have more vertices
+
+    Returns
+    -------
+    icosphere_mesh: mesh
+    """
+    ico = icosahedron()
+
+    for _ in range(refinement):
+        ico = refine_sphere(ico)
+
+    return Mesh((ico.vertices * radius) + position, ico.faces)

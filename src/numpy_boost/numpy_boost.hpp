@@ -48,7 +48,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/multi_array.hpp>
 #include <boost/cstdint.hpp>
 
-#include "exception.cpp"
+#include "numpy_boost/exception.cpp"
 
 /* numpy_type_map<T>
 

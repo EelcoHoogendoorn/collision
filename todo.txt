@@ -14,3 +14,6 @@ use this for inspiration?
 https://github.com/julienr/boost_numpy_eigen
 
 add improved mode funcs
+
+apply integer encoding scheme more generally; instead of computing integer encoding on the fly,
+replace all cell calculations with it directly

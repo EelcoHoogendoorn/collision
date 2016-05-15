@@ -9,8 +9,8 @@ boost python interface definition
 #include "interaction_map.cpp"
 #include "triangle_mesh.cpp"
 
-typedef VertexGridHash<float32, int16, 2> Grid2d;
-typedef VertexGridHash<float32, int16, 3> Grid3d;
+typedef PointGrid<float32, int16, 2> Grid2d;
+typedef PointGrid<float32, int16, 3> Grid3d;
 
 typedef TriangleMesh<float32> Mesh;
 

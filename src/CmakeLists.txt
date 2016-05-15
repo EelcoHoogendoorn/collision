@@ -1,7 +1,6 @@
 cmake_minimum_required (VERSION 3.5)
 project (Collision)
 
-
 set(Boost_USE_STATIC_LIBS OFF)
 set(Boost_USE_MULTITHREADED ON)
 find_package(Boost REQUIRED COMPONENTS python)

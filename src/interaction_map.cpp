@@ -40,7 +40,7 @@ the only way to make this faster would be to actively reorder the input points, 
 */
 
 template<typename real_type, typename fixed_type, int NDim>
-class VertexGridHash {
+class PointGrid {
 	/*
 	this datastructure allows for coarse/braod collision queries
 	it is one of the most simple datastructures to implement and debug,
@@ -53,6 +53,7 @@ public:
 	typedef Eigen::Array<real_type,  2, NDim>	extents_type;
 	typedef Eigen::Array<real_type,  1, NDim>	vector_type;
 	typedef Eigen::Array<fixed_type, 1, NDim>	cell_type;
+	typedef Eigen::Array<hash_type,  1, NDim>	strides_type;
 	typedef Eigen::Array<hash_type,  1, NDim>	strides_type;
 
 	const ndarray<vector_type>      position;    // positions
@@ -75,12 +76,12 @@ public:
 	auto get_cells()        const { return cell_id.unview<fixed_type>(); }
 	auto get_permutation()  const { return permutation; }
 	auto get_pivots()       const { return pivots; }
-	void set_cells(ndarray<fixed_type, 2> cells)             { int a = 3; }
-	void set_permutation(ndarray<index_type> permutation)   { int a = 3; }
-	void set_pivots(ndarray<index_type> pivots)             { int a = 3; }
+	void set_cells(ndarray<fixed_type, 2> cells)            {}
+	void set_permutation(ndarray<index_type> permutation)   {}
+	void set_pivots(ndarray<index_type> pivots)             {}
 
-	// grid constructor
-	explicit VertexGridHash(ndarray<real_type, 2> position, real_type lengthscale) :
+	// constructor
+	explicit PointGrid(ndarray<real_type, 2> position, real_type lengthscale) :
 		position	(position.view<vector_type>()),
 		n_points	(position.size()),
 		lengthscale	(lengthscale),
