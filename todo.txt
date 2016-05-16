@@ -1,13 +1,5 @@
-add cast back to numpy types
-constructing empty array of novel type currently fails on incomplete typemap
-
-retain type, ndim convention, since eigen uses it as well
 
 overload register_type for complete ndarray typedefs
-
-update collisioninfo with all modern conveniences
-
-merge this into trianglemesh? colinfo should come from trianglemesh
 
 add eigen::map to numpy funcs as well?
 use this for inspiration?
@@ -17,3 +9,5 @@ add improved mode funcs
 
 apply integer encoding scheme more generally; instead of computing integer encoding on the fly,
 replace all cell calculations with it directly
+
+implement grid offset for point-point on python level?

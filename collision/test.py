@@ -54,8 +54,8 @@ def test_mesh():
 
 
 def test_collision():
-    meshes = [icosphere(0.5, refinement=3), icosphere(0.55, [1, 0, 0], refinement=3)]
-    lengthscale = 0.5
+    meshes = [icosphere(0.5, refinement=3), icosphere(0.5, [0.95, 0, 0], refinement=3)]
+    lengthscale = 0.2
     grids = [spatial.Grid3d(m.vertices, lengthscale) for m in meshes]
     ctmeshes = [spatial.Mesh(
         m.vertices,

@@ -25,7 +25,7 @@ enum Action
 
 /*
 class to handle interactions between a triangle mesh and a pointcloud
-make this a method of grid?
+make this a method of mesh?
 */
 template<typename grid_type, typename mesh_type>
 class CollisionInfo {
@@ -99,16 +99,16 @@ public:
 	tvn are triangle vertex normals
 	*/
 	static std::tuple<real3, real3, real> triangle_point_test(const _real33& tvp, const _real33& tvn) {
-		auto getnormal = [&](const _real3& bary) { return tvn * bary;};					//get normal, given a bary
-		auto getbary = [&](const _real3& normal) { return area_project(tvp, normal);};	//get bary, given a normal
-		auto iterate = [&](const _real3& bary) { return getbary(getnormal(bary));};		//one iteration is a composition of the two
+		auto getnormal = [&](const _real3& bary)   { return tvn * bary;};					//get normal, given a bary
+		auto getbary   = [&](const _real3& normal) { return area_project(tvp, normal);};	//get bary, given a normal
+		auto iterate   = [&](const _real3& bary)   { return getbary(getnormal(bary));};		//one iteration is a composition of the two
 
 		const real pou = 1.0 / 3;          // start in the center of the triangle
 		const _real3 init(pou, pou, pou);
 
-		const _real3 bary = iterate(iterate(init));		    // two fixed point iterations seem to suffice
+		const _real3 bary   = iterate(iterate(init));		// two fixed point iterations seem to suffice
 		const _real3 normal = getnormal(bary).normalized();	// need normal to compute depth
-		const  real  depth = (tvp * bary).dot(normal);		// compute depth along normal
+		const  real  depth  = (tvp * bary).dot(normal);		// compute depth along normal
 
 		return std::make_tuple(bary.transpose(), normal.transpose(), depth);
 	}

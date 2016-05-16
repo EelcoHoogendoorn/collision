@@ -28,7 +28,7 @@ class Actor(object):
         return spatial.Mesh(
             self.position,
             self.mesh.vertex_normals(),
-            np.ascontiguousarray(self.mesh.faces[:, ::-1]),
+            np.ascontiguousarray(self.mesh.faces[:, ::+1]),
             self.length_scale, 0.0
         )
 
@@ -111,6 +111,9 @@ class Balloon(Nonridid):
 class Scene(object):
     def __init__(self, actors):
         self.actors = actors
+        for a in actors:
+            assert a.mesh.volume() > 0
+            assert a.mesh.is_orientated()
 
     def integrate(self, dt):
         """integrate the state of the scene with a timestep dt"""
@@ -136,7 +139,7 @@ class Scene(object):
                     relative_velocity = ai.velocity[mask] - velocity
 
                     friction = 1e-2
-                    stiffness = 1e1
+                    stiffness = 3e1
                     force = info.depth[mask, None] * info.normal[mask] * stiffness - relative_velocity * friction
                     assert not np.any(np.isnan(force))
                     ai.force[mask] += force
