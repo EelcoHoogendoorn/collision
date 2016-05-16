@@ -10,6 +10,7 @@
 #include "typedefs.cpp"
 #include "numpy_eigen/array.cpp"
 #include "numpy_boost/ndarray.cpp"
+//#include "interaction_map.cpp"
 
 
 /*
@@ -28,29 +29,29 @@ public:
 	typedef Eigen::Array<real_type, 1, 3> vector_type;
 	typedef Eigen::Array<real_type, 2, 3> box_type;
 
+	const index_type    n_triangles;
+	const index_type    n_vertices;
+	const real_type     thickness;
+
 	const ndarray<vector_type>      position;
 	const ndarray<vector_type>      normal;
 	const ndarray<triangle_type>    triangles;
 	const ndarray<box_type>         boxes;
 
-	const index_type    n_triangles;
-	const index_type    n_vertices;
-	const real_type     thickness;
-
 
 	explicit TriangleMesh(
-		ndarray<real_type, 2> position,
-		ndarray<real_type, 2> normal,
+		ndarray<real_type,  2> position,
+		ndarray<real_type,  2> normal,
 		ndarray<index_type, 2> triangles,
 		real_type thickness
 	) :
-		position(position.view<vector_type>()),
-		normal(normal.view<vector_type>()),
-		triangles(triangles.view<triangle_type>()),
-		thickness(thickness),
-		n_vertices(position.size()),
-		n_triangles(triangles.size()),
-		boxes(init_boxes())
+		position    (position.view<vector_type>()),
+		normal      (normal.view<vector_type>()),
+		triangles   (triangles.view<triangle_type>()),
+		thickness   (thickness),
+		n_vertices  (position.size()),
+		n_triangles (triangles.size()),
+		boxes       (init_boxes())
 	{
 	}
 
@@ -82,7 +83,7 @@ public:
 		return boxes;
 	}
 
-    // map the vertices of this mesh to a point grid
+    // map the vertices of this mesh to a point grid; extent can be reused
 //    Grid3d get_point_grid() const {
 //        return Grid3d(vertices);
 //    }

@@ -3,6 +3,7 @@ boost python interface definition
 */
 
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
+#define BOOST_DISABLE_ASSERTS
 
 #include "typedefs.cpp"
 #include "numpy_boost/exception.cpp"
@@ -56,6 +57,9 @@ BOOST_PYTHON_MODULE(Collision)
 
 	class_<Info>("Info", init<Grid3d&, Mesh&, bool>())
 		.add_property("depth",      &Info::get_depth, &Info::set_depth)
+		.add_property("triangle",   &Info::get_triangle, &Info::set_triangle)
+		.add_property("bary",       &Info::get_triangle, &Info::set_triangle)
+		.add_property("normal",     &Info::get_triangle, &Info::set_triangle)
 		;
 
 	register_exception_translator<python_exception>(&translate);

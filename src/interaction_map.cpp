@@ -54,7 +54,6 @@ public:
 	typedef Eigen::Array<real_type,  1, NDim>	vector_type;
 	typedef Eigen::Array<fixed_type, 1, NDim>	cell_type;
 	typedef Eigen::Array<hash_type,  1, NDim>	strides_type;
-	typedef Eigen::Array<hash_type,  1, NDim>	strides_type;
 
 	const ndarray<vector_type>      position;    // positions
 	const index_type                n_points;    // number of points
