@@ -51,10 +51,11 @@ class RigidActor(Actor):
 
 class Nonridid(Actor):
 
-    def __init__(self, mesh, elasticity):
+    def __init__(self, mesh, elasticity, damping):
         super(Nonridid, self).__init__(mesh)
         self.vertex_incidence = inc = self.mesh.compute_vertex_incidence()  # ExV
         self.elasticity = elasticity
+        self.damping = damping
 
         self.velocity = np.zeros_like(self.position)
         self.mass = self.mesh.vertex_areas()
@@ -66,10 +67,12 @@ class Nonridid(Actor):
         self.rest_length = np.linalg.norm(edges, axis=1)
 
     def compute_edge_forces(self):
-        edges = self.vertex_incidence * self.mesh.vertices
-        diff = self.rest_length - np.linalg.norm(edges, axis=1)
+        edges = self.vertex_incidence * self.position
+        compression = self.rest_length - np.linalg.norm(edges, axis=1)
         dir = math.normalize(edges)
-        force = diff * self.elasticity
+        relative_velocity = self.vertex_incidence * self.velocity
+        relative_velocity = math.dot(relative_velocity, dir)
+        force = compression * self.elasticity - relative_velocity * self.damping
         return self.vertex_incidence.T * (dir * force[:, None])
 
     def integrate(self, dt):
@@ -84,18 +87,18 @@ class Nonridid(Actor):
 
 class Balloon(Nonridid):
 
-    def __init__(self, mesh, elasticity, compressibility):
-        super(Balloon, self).__init__(mesh, elasticity)
+    def __init__(self, mesh, elasticity, damping, compressibility):
+        super(Balloon, self).__init__(mesh, elasticity, damping)
         self.compressibility = compressibility
         self.compute_rest_volume()
 
     def compute_rest_volume(self):
-        self.rest_volume = self.mesh.volume() * 2
+        self.rest_volume = self.mesh.volume() * 3
 
     def compute_volume_forces(self):
-        diff = self.rest_volume - self.mesh.volume()
+        compression = self.rest_volume - self.mesh.volume()
         volume_gradient = self.mesh.vertex_volume_gradient()
-        return volume_gradient * (diff * self.compressibility)
+        return volume_gradient * (compression * self.compressibility)
 
     def collect_forces(self):
         super(Balloon, self).collect_forces()
@@ -134,7 +137,7 @@ class Scene(object):
         view.camera = cam1
 
 
-        dt = 0.02
+        dt = 0.002
         def update(event):
             self.integrate(dt)
             for i in range(len(self.actors)):
@@ -164,9 +167,10 @@ if __name__=='__main__':
     ball = lambda p : icosphere(0.1, p, 3)
     e = .1
     c = 100
+    d = .001
     actors = [StaticActor(turtle),
-              Balloon(ball([0,0,0]), e, c),
-              Balloon(ball([0,0,1]), e, c)]
+              Balloon(ball([0,0,0]), e, d, c),
+              Balloon(ball([0,0,1]), e, d, c)]
 
     scene = Scene(actors)
     scene.plot()
