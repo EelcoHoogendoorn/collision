@@ -51,7 +51,7 @@ BOOST_PYTHON_MODULE(Collision)
 //		.def("unit_test", &Grid3::unit_test)
 		;
 
-	class_<Mesh>("Mesh", init<ndarray<float32, 2>, ndarray<float32, 2>, ndarray<int32, 2>, float32>())
+	class_<Mesh>("Mesh", init<ndarray<float32, 2>, ndarray<float32, 2>, ndarray<int32, 2>, float32, float32>())
 		.add_property("boxes",      &Mesh::get_boxes, &Mesh::set_boxes)
 		;
 

@@ -31,7 +31,8 @@ public:
 
 	const index_type    n_triangles;
 	const index_type    n_vertices;
-	const real_type     thickness;
+	const real_type     inner;
+	const real_type     outer;
 
 	const ndarray<vector_type>      position;
 	const ndarray<vector_type>      normal;
@@ -43,12 +44,14 @@ public:
 		ndarray<real_type,  2> position,
 		ndarray<real_type,  2> normal,
 		ndarray<index_type, 2> triangles,
-		real_type thickness
+		real_type inner,
+		real_type outer
 	) :
 		position    (position.view<vector_type>()),
 		normal      (normal.view<vector_type>()),
 		triangles   (triangles.view<triangle_type>()),
-		thickness   (thickness),
+		inner       (inner),
+		outer       (outer),
 		n_vertices  (position.size()),
 		n_triangles (triangles.size()),
 		boxes       (init_boxes())
@@ -73,11 +76,11 @@ public:
 			{
 				auto v = triangle(i);
 
-				auto inner = position[v] - normal[v] * thickness * 2;
-				auto outer = position[v] + normal[v] * thickness * 2;
+				auto i = position[v] - normal[v] * inner;
+				auto o = position[v] + normal[v] * outer;
 
-				box.row(0) = box.row(0).min(inner).min(outer);
-				box.row(1) = box.row(1).max(inner).max(outer);
+				box.row(0) = box.row(0).min(i).min(o);
+				box.row(1) = box.row(1).max(i).max(o);
 			}
 		}
 		return boxes;

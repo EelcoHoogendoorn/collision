@@ -10,6 +10,7 @@ class Actor(object):
         self.mesh = mesh
 
         self.position = self.mesh.vertices      # alias mesh vertices
+        self.velocity = np.zeros_like(self.position)
         self.force = np.zeros_like(self.position)
         self.length_scale = float(mesh.edge_lengths().mean())
 
@@ -27,16 +28,12 @@ class Actor(object):
         return spatial.Mesh(
             self.position,
             self.mesh.vertex_normals(),
-            self.mesh.faces,
-            self.length_scale / 2
+            np.ascontiguousarray(self.mesh.faces[:, ::-1]),
+            self.length_scale, 0.0
         )
-    # def spatial_collide(self, other):
-    #     spatial.Info(self.get_spatial_grid(), other.get_spatial_mesh())
+
     def permute(self):
         """apply permutation of previously computed grid to all state variables"""
-
-    # def compute_forces(self):
-    #     self.force[:] = self.gravity
 
     def collect_forces(self):
         self.force[:] = 0
@@ -45,6 +42,7 @@ class Actor(object):
 class StaticActor(Actor):
     def __init__(self, mesh):
         super(StaticActor, self).__init__(mesh)
+
         grid = self.get_spatial_grid()
         mesh = self.get_spatial_mesh()
         self.get_spatial_grid = lambda : grid
@@ -58,7 +56,7 @@ class Nonridid(Actor):
 
     def __init__(self, mesh, elasticity, damping):
         super(Nonridid, self).__init__(mesh)
-        self.vertex_incidence = inc = self.mesh.compute_vertex_incidence()  # ExV
+        self.vertex_incidence = self.mesh.compute_vertex_incidence()  # ExV
         self.elasticity = elasticity
         self.damping = damping
 
@@ -73,7 +71,7 @@ class Nonridid(Actor):
 
     def compute_edge_forces(self):
         edges = self.vertex_incidence * self.position
-        compression = self.rest_length - np.linalg.norm(edges, axis=1)
+        compression = (self.rest_length - np.linalg.norm(edges, axis=1)) / self.rest_length
         dir = math.normalize(edges)
         relative_velocity = self.vertex_incidence * self.velocity
         relative_velocity = math.dot(relative_velocity, dir)
@@ -101,7 +99,7 @@ class Balloon(Nonridid):
         self.rest_volume = self.mesh.volume() * 3
 
     def compute_volume_forces(self):
-        compression = self.rest_volume - self.mesh.volume()
+        compression = (self.rest_volume - self.mesh.volume()) / self.rest_volume
         volume_gradient = self.mesh.vertex_volume_gradient()
         return volume_gradient * (compression * self.compressibility)
 
@@ -131,10 +129,22 @@ class Scene(object):
                 if i == j: continue
                 info = spatial.Info(grids[i], meshes[j], False)
                 mask = info.triangle != -1
-                if np.any(mask):
-                    force = info.depth[mask, None] * info.normal[mask]
+                if np.any(mask):# and not isinstance(ai, StaticActor):
+                    velocity = aj.velocity[aj.mesh.faces[info.triangle[mask]]]
+                    bary = info.bary[mask]
+                    velocity = np.einsum('vtc,vt->vc', velocity, bary)
+                    relative_velocity = ai.velocity[mask] - velocity
+
+                    friction = 1e-2
+                    stiffness = 1e1
+                    force = info.depth[mask, None] * info.normal[mask] * stiffness - relative_velocity * friction
                     assert not np.any(np.isnan(force))
-                    ai.force[mask] += force * 1e-9
+                    ai.force[mask] += force
+
+                    corners = aj.mesh.faces[info.triangle[mask]]
+                    for i in range(3):
+                        np.add.at(aj.force, corners[:, i], -bary[:, [i]] * force)
+                        # aj.force[corners[:,i]] -= info.bary[:, i] * force
 
                     # aj.force
                     # print(info.triangle[mask])
@@ -153,7 +163,7 @@ class Scene(object):
 
         vis_meshes = [scene.visuals.Mesh(
             actor.mesh.vertices,
-            actor.mesh.faces[:, ::-1],
+            actor.mesh.faces[:, ::+1],
             shading='flat',
             parent=view.scene) for actor in self.actors]
 
@@ -164,7 +174,10 @@ class Scene(object):
 
         dt = 0.002
         def update(event):
-            self.integrate(dt)
+            # update the simulation
+            for i in range(1):
+                self.integrate(dt)
+            # upload new state to gpu
             for i in range(len(self.actors)):
                 actor = self.actors[i]
                 if not isinstance(actor, StaticActor):
@@ -174,7 +187,6 @@ class Scene(object):
 
         timer = app.Timer(interval=dt, connect=update)
 
-
         timer.start()
         app.run()
 
@@ -183,17 +195,20 @@ if __name__=='__main__':
     turtle = Mesh.load_stl('part0.stl')
     # normalize orientation
     u, s, v = np.linalg.svd(turtle.vertices, full_matrices=0)
-    turtle.vertices = turtle.vertices.dot(v)
-    turtle.faces = turtle.faces[:, ::-1]
+    turtle.vertices = turtle.vertices.dot(v) * 3 + np.array([0,0,2], np.float32)
+    # turtle.faces = turtle.faces[:, ::-1]
 
     ico = icosphere(0.1, refinement=3)
     ball = lambda p : icosphere(0.1, p, 3)
-    e = .1
-    c = 100
-    d = .001
+    e = 1.5e-1
+    c = 1e2
+    d = .02
     actors = [StaticActor(turtle),
-              Balloon(ball([0,0,-0.5]), e, d, c),
-              Balloon(ball([0,0,0]), e, d, c)]
+              Balloon(ball([0,0,-0.8]), e, d, c),
+              Balloon(ball([0,0.2,-0.6]), e, d, c),
+              Balloon(ball([0,0,-0.2]), e, d, c),
+              Balloon(ball([0,0,0]), e, d, c),
+              ]
 
     scene = Scene(actors)
     scene.plot()

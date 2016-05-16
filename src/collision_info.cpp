@@ -200,8 +200,8 @@ public:
 
 			//decide what to do with the intersection result?
 			const Action action((
-				d > +2 * tm.thickness ||	//check intersection result for bounds
-				d < -2 * tm.thickness ||
+				d > +tm.inner ||	//check intersection result for bounds
+				d < -tm.outer ||
 				(bary < 0).any()) ?
 				    Action::Ignore :			    // if out of bounds, ignore
 				    triangle[v] == -1 ?		        // check for novelty
