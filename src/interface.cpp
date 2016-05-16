@@ -56,10 +56,10 @@ BOOST_PYTHON_MODULE(Collision)
 		;
 
 	class_<Info>("Info", init<Grid3d&, Mesh&, bool>())
-		.add_property("depth",      &Info::get_depth, &Info::set_depth)
-		.add_property("triangle",   &Info::get_triangle, &Info::set_triangle)
-		.add_property("bary",       &Info::get_triangle, &Info::set_triangle)
-		.add_property("normal",     &Info::get_triangle, &Info::set_triangle)
+		.add_property("depth",      &Info::get_depth,       &Info::set_depth)
+		.add_property("triangle",   &Info::get_triangle,    &Info::set_triangle)
+		.add_property("bary",       &Info::get_bary,        &Info::set_bary)
+		.add_property("normal",     &Info::get_normal,      &Info::set_normal)
 		;
 
 	register_exception_translator<python_exception>(&translate);

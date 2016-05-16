@@ -21,17 +21,17 @@ class Actor(object):
     def get_spatial_grid(self):
         return spatial.Grid3d(
             self.position,
-            self.length_scale
+            self.length_scale * 2
         )
     def get_spatial_mesh(self):
         return spatial.Mesh(
             self.position,
             self.mesh.vertex_normals(),
             self.mesh.faces,
-            self.length_scale
+            self.length_scale / 2
         )
-    def spatial_collide(self, other):
-        spatial.Info(self.get_spatial_grid(), other.get_spatial_mesh())
+    # def spatial_collide(self, other):
+    #     spatial.Info(self.get_spatial_grid(), other.get_spatial_mesh())
     def permute(self):
         """apply permutation of previously computed grid to all state variables"""
 
@@ -43,7 +43,12 @@ class Actor(object):
 
 
 class StaticActor(Actor):
-    pass
+    def __init__(self, mesh):
+        super(StaticActor, self).__init__(mesh)
+        grid = self.get_spatial_grid()
+        mesh = self.get_spatial_mesh()
+        self.get_spatial_grid = lambda : grid
+        self.get_spatial_mesh = lambda : mesh
 
 class RigidActor(Actor):
     """integrates all external forces into angular momentum quaternion"""
@@ -110,10 +115,30 @@ class Scene(object):
         self.actors = actors
 
     def integrate(self, dt):
+        """integrate the state of the scene with a timestep dt"""
         for a in self.actors:
             a.collect_forces()
+        self.collide()
         for a in self.actors:
             a.integrate(dt)
+
+    def collide(self):
+        grids = [a.get_spatial_grid() for a in self.actors]
+        meshes = [a.get_spatial_mesh() for a in self.actors]
+
+        for i, ai in enumerate(self.actors):
+            for j, aj in enumerate(self.actors):
+                if i == j: continue
+                info = spatial.Info(grids[i], meshes[j], False)
+                mask = info.triangle != -1
+                if np.any(mask):
+                    force = info.depth[mask, None] * info.normal[mask]
+                    assert not np.any(np.isnan(force))
+                    ai.force[mask] += force * 1e-9
+
+                    # aj.force
+                    # print(info.triangle[mask])
+                    # print(info.depth[mask])
 
     def plot(self):
 
@@ -144,8 +169,6 @@ class Scene(object):
                 actor = self.actors[i]
                 if not isinstance(actor, StaticActor):
                     m = vis_meshes[i]
-                    print(actor.position.shape)
-                    print(actor.position.min())
                     m.set_data(vertices=actor.position[actor.mesh.faces])
 
 
@@ -169,8 +192,8 @@ if __name__=='__main__':
     c = 100
     d = .001
     actors = [StaticActor(turtle),
-              Balloon(ball([0,0,0]), e, d, c),
-              Balloon(ball([0,0,1]), e, d, c)]
+              Balloon(ball([0,0,-0.5]), e, d, c),
+              Balloon(ball([0,0,0]), e, d, c)]
 
     scene = Scene(actors)
     scene.plot()
