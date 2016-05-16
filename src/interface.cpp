@@ -3,7 +3,7 @@ boost python interface definition
 */
 
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
-#define BOOST_DISABLE_ASSERTS
+//#define BOOST_DISABLE_ASSERTS
 
 #include "typedefs.cpp"
 #include "numpy_boost/exception.cpp"

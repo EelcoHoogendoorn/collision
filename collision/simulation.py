@@ -35,8 +35,12 @@ class Actor(object):
     def permute(self):
         """apply permutation of previously computed grid to all state variables"""
 
-    def compute_forces(self):
-        self.forces[:] = self.gravity
+    # def compute_forces(self):
+    #     self.force[:] = self.gravity
+
+    def collect_forces(self):
+        self.force[:] = 0
+
 
 class StaticActor(Actor):
     pass
@@ -59,21 +63,22 @@ class Nonridid(Actor):
 
     def compute_rest_length(self):
         edges = self.vertex_incidence * self.mesh.vertices
-        self.rest_length = np.linalg.norm(edges)
+        self.rest_length = np.linalg.norm(edges, axis=1)
 
     def compute_edge_forces(self):
         edges = self.vertex_incidence * self.mesh.vertices
-        diff = np.linalg.norm(edges) - self.rest_length
-        dir = math.normalized(edges)
+        diff = self.rest_length - np.linalg.norm(edges, axis=1)
+        dir = math.normalize(edges)
         force = diff * self.elasticity
-        return self.vertex_incidence.T * (dir * force)
+        return self.vertex_incidence.T * (dir * force[:, None])
 
     def integrate(self, dt):
-        self.velocity += self.force * dt / self.mass
+        self.velocity += self.force * dt / self.mass[:, None]
         self.position += self.velocity * dt
 
     def collect_forces(self):
         super(Nonridid, self).collect_forces()
+        self.force += self.gravity * self.mass[:, None]
         self.force += self.compute_edge_forces()
 
 
@@ -82,15 +87,15 @@ class Balloon(Nonridid):
     def __init__(self, mesh, elasticity, compressibility):
         super(Balloon, self).__init__(mesh, elasticity)
         self.compressibility = compressibility
-        self.compute_rest_length()
+        self.compute_rest_volume()
 
     def compute_rest_volume(self):
-        self.rest_volume = self.mesh.volume()
+        self.rest_volume = self.mesh.volume() * 2
 
     def compute_volume_forces(self):
-        diff = self.mesh.volume() - self.rest_volume
-        normals = self.mesh.vertex_normals() * self.mass    # should actually be non-normalized normals...
-        return normals * (diff * self.compressibility)
+        diff = self.rest_volume - self.mesh.volume()
+        volume_gradient = self.mesh.vertex_volume_gradient()
+        return volume_gradient * (diff * self.compressibility)
 
     def collect_forces(self):
         super(Balloon, self).collect_forces()
@@ -111,17 +116,6 @@ class Scene(object):
 
         from vispy import app, scene, io
 
-        # class Canvas(app.Canvas):
-        #     def __init__(self):
-        #         app.Canvas.__init__(self, keys='interactive', size=(800, 600))
-        #
-        #     def on_draw(self, ev):
-        #         gloo.set_viewport(0, 0, *self.physical_size)
-        #         gloo.clear(color='black', depth=True)
-        #
-        #         for mesh in self.meshes:
-        #             mesh.draw()
-
         # Prepare canvas
         canvas = scene.SceneCanvas(keys='interactive', size=(800, 600), show=True)
         canvas.measure_fps()
@@ -130,7 +124,7 @@ class Scene(object):
         view = canvas.central_widget.add_view()
 
         vis_meshes = [scene.visuals.Mesh(
-            actor.mesh.vertices * 100,
+            actor.mesh.vertices,
             actor.mesh.faces[:, ::-1],
             shading='flat',
             parent=view.scene) for actor in self.actors]
@@ -139,6 +133,23 @@ class Scene(object):
         cam1 = scene.cameras.FlyCamera(parent=view.scene, fov=fov, name='Fly')
         view.camera = cam1
 
+
+        dt = 0.02
+        def update(event):
+            self.integrate(dt)
+            for i in range(len(self.actors)):
+                actor = self.actors[i]
+                if not isinstance(actor, StaticActor):
+                    m = vis_meshes[i]
+                    print(actor.position.shape)
+                    print(actor.position.min())
+                    m.set_data(vertices=actor.position[actor.mesh.faces])
+
+
+        timer = app.Timer(interval=dt, connect=update)
+
+
+        timer.start()
         app.run()
 
 
@@ -151,8 +162,8 @@ if __name__=='__main__':
 
     ico = icosphere(0.1, refinement=3)
     ball = lambda p : icosphere(0.1, p, 3)
-    e = 1
-    c = 1
+    e = .1
+    c = 100
     actors = [StaticActor(turtle),
               Balloon(ball([0,0,0]), e, c),
               Balloon(ball([0,0,1]), e, c)]

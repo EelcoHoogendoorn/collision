@@ -95,7 +95,7 @@ class Mesh(PolyData):
             np.add.at(areas, self.faces[:, i], face_areas)
         return areas / 3
 
-    def vertex_normals(self):
+    def vertex_volume_gradient(self):
         """
         Compute vertex normals, by averaging the weighted sum of its incident face normals.
         """
@@ -106,7 +106,13 @@ class Mesh(PolyData):
         # process the three corners of all faces one-by-one; would be nice to vectorize, but unsure if we can
         for i in range(3):
             np.add.at(vnormals, self.faces[:, i], fnormals)
-        return collision.math.normalize(vnormals)
+        return vnormals
+
+    def vertex_normals(self):
+        """
+        Compute vertex normals, by averaging the weighted sum of its incident face normals.
+        """
+        return collision.math.normalize(self.vertex_volume_gradient())
 
     def volume(self):
         return (self.face_normals() * self.face_centroids()).sum() / 3

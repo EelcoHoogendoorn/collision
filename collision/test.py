@@ -8,11 +8,11 @@ import time
 def test_performance():
     # warmup run for mem allocation
     lengthscale = 0.03
-    points = np.random.rand(300000, 3).astype(np.float32)
+    points = np.random.rand(3000000, 3).astype(np.float32)
     grid = spatial.Grid3d(points, (lengthscale))
 
     # run on unsorted data
-    points = np.random.rand(300000, 3).astype(np.float32)
+    points = np.random.rand(3000000, 3).astype(np.float32)
     start = time.clock()
     grid = spatial.Grid3d(points, (lengthscale))
     unsorted = time.clock() - start
@@ -99,4 +99,4 @@ def vispy_plot(meshes):
     app.run()
 
 
-test_collision()
+test_performance()
