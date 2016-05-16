@@ -31,7 +31,6 @@ template<typename grid_type, typename mesh_type>
 class CollisionInfo {
 
 public:
-
 	typedef int32 index_type;
 	typedef float32 real;
 	typedef Eigen::Array<real, 1, 3> real3;
@@ -40,9 +39,9 @@ public:
 	typedef Eigen::Matrix<real, 3, 3> _real33;
 	typedef Eigen::Array<index_type, 1, 3> triangle_type;
 
-
-	const grid_type& vg;
-	const mesh_type& tm;
+	const grid_type& grid;
+	const mesh_type& mesh;
+	CollisionInfo& info;
 
 	// contact properties
 	ndarray<real3>      bary;       // bary position of contact
@@ -65,18 +64,20 @@ public:
 
 
 	//construct from vertex count alone
-	explicit CollisionInfo(grid_type& vg, mesh_type& tm, const bool self_intersect) :
-		vg(vg), tm(tm),
-		bary    (ndarray<real, 2>({ vg.n_points, 3 }).view<real3>()),
-		normal  (ndarray<real, 2>({ vg.n_points, 3 }).view<real3>()),
-		depth   ({ vg.n_points }),
-		triangle({ vg.n_points }),
+	explicit CollisionInfo(grid_type& grid, mesh_type& mesh, const bool self_intersect) :
+		grid    (grid),
+		mesh    (mesh),
+		info    (*this),
+		bary    (ndarray<real, 2>({ grid.n_points, 3 }).view<real3>()),
+		normal  (ndarray<real, 2>({ grid.n_points, 3 }).view<real3>()),
+		depth   ({ grid.n_points }),
+		triangle({ grid.n_points }),
 		count   (-1),
 		self_intersect(self_intersect)
 	{
-		fill(triangle, -1);
+		fill(triangle, -1);     // mark all points as non-intersecting
 		triangles_versus_points();
-	}
+}
 
 
 	/*
@@ -127,13 +128,13 @@ public:
 	//wrap bounding box iterator, adding in triangle-awareness
 	template <class F>
 	void for_each_vertex_in_triangle(index_type t, F& body) const {
-		vg.for_each_vertex_in_bounding_box(tm.boxes[t], body);
+		grid.for_each_vertex_in_bounding_box(mesh.boxes[t], body);
 	}
 
 	//wrap bounding box iterator, adding in triangle-awareness
 	template <class F>
 	void for_each_vertex_in_triangle_naive(index_type t, F& body) const {
-		vg.for_each_vertex_in_bounding_box_naive(tm.boxes[t], body);
+		grid.for_each_vertex_in_bounding_box_naive(mesh.boxes[t], body);
 	}
 
 
@@ -143,31 +144,30 @@ public:
 	*/
 	template <class F>
 	void for_each_pair(const F& body) {
-		CollisionInfo& ci = *this;
-		ci.count = 0;			//initialize number of interactions
+		info.count = 0;			//initialize number of interactions
 
-		for (auto t : boost::irange(0, tm.n_triangles)) {		//loop over triangles
+		for (auto t : boost::irange(0, mesh.n_triangles)) {		//loop over triangles
 			//some mutable optimizations
 			bool loaded = false;
 			triangle_type tvi;
 			real33 tvp, tvn;
 
 			//loop over all vertices in bounding box of triangle;
-			ci.for_each_vertex_in_triangle(t, [&](const int v) {
+			info.for_each_vertex_in_triangle(t, [&](const int v) {
 				if (!loaded) {
 					//read triangle into local mem matrix for efficient geometry computations
 					//only needed if we hit a vertex at all
-					tvi = tm.triangles[t];
+					tvi = mesh.triangles[t];
 					for (auto i : boost::irange(0, 3)) {
 						auto c = tvi[i];
-						tvp.col(i) = tm.position[c];
-						tvn.col(i) = tm.normal[c];
+						tvp.col(i) = mesh.position[c];
+						tvn.col(i) = mesh.normal[c];
 					}
 					loaded = true;
 				}
 
 				//skip vertex-conflicts on self intersections
-				if (ci.self_intersect)
+				if (info.self_intersect)
 				    if ((tvi == v).any()) return;
 
 				//call the body; this tells us what to think of this triangle-vertex pair
@@ -175,13 +175,13 @@ public:
 				const Action action = std::get<0>(ret);
 
 				if (action == Action::Ignore) return;
-				if (action == Action::Store) ci.count += 1;			//register novel interaction
+				if (action == Action::Store) info.count += 1;			//register novel interaction
 
 				//store the result
-				ci.triangle[v] = t;
-				std::tie(ci.bary[v],
-					     ci.normal[v],
-					     ci.depth[v]) = std::get<1>(ret);		//ret is a tuple of tuples...
+				info.triangle[v] = t;
+				std::tie(info.bary[v],
+					     info.normal[v],
+					     info.depth[v]) = std::get<1>(ret);		//ret is a tuple of tuples...
 			});
 		}
 	}
@@ -194,20 +194,20 @@ public:
 			const real33& tvp, const real33& tvn					//triangle vertex positions and normals
 		) {
 			//intersect translated triangle, and unpack results
-			const auto  intersection(triangle_point_test(tvp.colwise() - vg.position[v].transpose(), tvn));
+			const auto  intersection(triangle_point_test(tvp.colwise() - grid.position[v].transpose(), tvn));
 			const real3 bary(std::get<0>(intersection));
 			const real  d   (std::get<2>(intersection));
 
 			//decide what to do with the intersection result?
 			const Action action((
-				d > +tm.inner ||	//check intersection result for bounds
-				d < -tm.outer ||
+				d > +mesh.inner ||	//check intersection result for bounds
+				d < -mesh.outer ||
 				(bary < 0).any()) ?
-				    Action::Ignore :			    // if out of bounds, ignore
-				    triangle[v] == -1 ?		        // check for novelty
-        				Action::Store :			    // if novel, store
-        				d*d < depth[v]*depth[v] ?   // check for superiority
-            				Action::Overwrite :		// if superior, overwrite
+				    Action::Ignore :			            // if out of bounds, ignore
+				    info.triangle[v] == -1 ?		        // check for novelty
+        				Action::Store :			            // if novel, store
+        				d*d < info.depth[v]*info.depth[v] ? // check for superiority
+            				Action::Overwrite :		        // if superior, overwrite
             				Action::Ignore);
 
 			return std::make_tuple(action, intersection);			//return result and what to do with it
@@ -217,7 +217,7 @@ public:
 
 	void unit_test() {
 		//test triangle iteration and lookup
-		for (auto t : boost::irange(0, tm.n_triangles)) {
+		for (auto t : boost::irange(0, mesh.n_triangles)) {
 			std::vector<int> clever;
 			for_each_vertex_in_triangle(t, [&](auto v) {clever.push_back(v);});
 			boost::sort(clever);
