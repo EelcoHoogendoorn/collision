@@ -3,6 +3,7 @@ channels:
   - anaconda
   - conda-forge  # for boost and eigen
   - clinicalgraphics
+  - eelcohoogendoorn
 dependencies:
   - python =3.5*
   - numpy >=1.10*

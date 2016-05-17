@@ -130,7 +130,7 @@ class Scene(object):
         for i, ai in enumerate(self.actors):
             for j, aj in enumerate(self.actors):
                 if i == j: continue
-                info = spatial.Info(grids[i], meshes[j], False)
+                info = spatial.Info(grids[i], meshes[j], i==j)
                 mask = info.triangle != -1
                 if np.any(mask):# and not isinstance(ai, StaticActor):
                     velocity = aj.velocity[aj.mesh.faces[info.triangle[mask]]]
@@ -142,8 +142,8 @@ class Scene(object):
                     stiffness = 3e1
                     force = info.depth[mask, None] * info.normal[mask] * stiffness - relative_velocity * friction
                     assert not np.any(np.isnan(force))
-                    ai.force[mask] += force
 
+                    np.add.at(ai.force, np.flatnonzero(mask), force)
                     corners = aj.mesh.faces[info.triangle[mask]]
                     for i in range(3):
                         np.add.at(aj.force, corners[:, i], -bary[:, [i]] * force)
@@ -198,7 +198,7 @@ if __name__=='__main__':
     turtle = Mesh.load_stl('part0.stl')
     # normalize orientation
     u, s, v = np.linalg.svd(turtle.vertices, full_matrices=0)
-    turtle.vertices = turtle.vertices.dot(v) * 3 + np.array([0,0,2], np.float32)
+    turtle.vertices = turtle.vertices.dot(v[:, [1,2,0]]) * 3 + np.array([0,0,2], np.float32)
     # turtle.faces = turtle.faces[:, ::-1]
 
     ico = icosphere(0.1, refinement=3)
