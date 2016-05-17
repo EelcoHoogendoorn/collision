@@ -190,11 +190,18 @@ private:
 
 		return pivots.resize(n_pivots);
 	}
+	// initialize the stencil of hash offsets
 	auto init_stencil(ndarray<index_t, 2> stencil) const {
 	    offsets = ndarray<cell_t>({stencil.size()});
-	    for (index_t o : irange(0, stencil.size()))
-	        offsets[o] = hash_from_cell(stencil[o]);
-	    return offsets;
+        index_t n_offsets = 0;
+
+	    auto push_back = [&](auto hash){offsets[n_offsets++] = hash;};
+
+	    for (index_t o : irange(0, stencil.size())) {
+	        auto hash = hash_from_cell(stencil[o]);
+	        if (hash > 0) push_back(hash);
+	    }
+	    return offsets.resize(n_offsets);
 	}
 
 
@@ -290,5 +297,38 @@ public:
 		for (auto v : irange(0, n_points))
 			if (in_box(v))
 				body(v);
+	}
+
+	//symmetric iteration over all vertex pairs, summing reaction forces
+	template <class F>
+	void for_each_vertex_pair(const F& body)
+	{
+		const real_t ls2 = lengthscale*lengthscale;
+
+		//this function wraps sign conventions regarding relative position and force
+		const auto wrapper = [&](const index_t vi, const index_t vj){
+			const vector_t rp = position[vi] - position[vj];
+			const real_t d2 = (rp*rp).sum();
+			if (d2 > ls2) return;
+			body(vi,vj,d2);  // store index pair
+		};
+
+		//loop over all buckets
+		for_each_cell([&](const fixed_t ci)
+		{
+            const auto bi = vertices_from_cell(ci);
+			//interaction within bucket
+			for (index_t vi : bi)
+				for (index_t vj : bi)
+					if (vi==vj) break; else
+						wrapper(vi, vj);
+			//loop over all neighboring buckets
+			for (index_t o : stencil) {
+				const auto bj = vertices_from_cell(ci + o);
+				for (const index_t vj : bj)		//loop over other guy first; he might be empty, giving early exit
+					for (const index_t vi : bi)
+						wrapper(vi, vj);
+			});
+		});
 	}
 };
