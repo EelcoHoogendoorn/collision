@@ -7,7 +7,7 @@ import time
 
 
 def test_basic():
-    lengthscale = 0.4
+    lengthscale = 0.5
     points = np.random.rand(30, 2).astype(np.float32)
     grid = spatial.Grid2d(points, lengthscale)
     print(grid.permutation)
@@ -74,4 +74,4 @@ def test_collision():
             print(info.depth[mask])
 
 
-test_collision()
+test_basic()

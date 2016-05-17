@@ -27,14 +27,14 @@ enum Action
 class to handle interactions between a triangle mesh and a pointcloud
 make this a method of mesh?
 */
-template<typename grid_t, typename mesh_t>
+template<class grid_t, class mesh_t>
 class CollisionInfo {
 
 public:
-	typedef int32 index_t;
-	typedef float32 real_t;
-	typedef Eigen::Array<real_t, 1, 3> real3;
-	typedef Eigen::Array<real_t, 3, 3> real33;
+	typedef typename grid_t::index_t    index_t;
+	typedef typename grid_t::real_t     real_t;
+	typedef Eigen::Array<real_t, 1, 3>  real3;
+	typedef Eigen::Array<real_t, 3, 3>  real33;
 	typedef Eigen::Matrix<real_t, 3, 1> _real3;
 	typedef Eigen::Matrix<real_t, 3, 3> _real33;
 	typedef Eigen::Array<index_t, 1, 3> triangle_t;
@@ -64,7 +64,7 @@ public:
 
 
 	//construct from vertex count alone
-	explicit CollisionInfo(grid_t& grid, mesh_t& mesh, const bool self_intersect) :
+	explicit CollisionInfo(const grid_t& grid, const mesh_t& mesh, const bool self_intersect) :
 		grid    (grid),
 		mesh    (mesh),
 		info    (*this),
@@ -77,7 +77,7 @@ public:
 	{
 		fill(triangle, -1);     // mark all points as non-intersecting
 		triangles_versus_points();
-}
+    }
 
 
 	/*
@@ -106,9 +106,9 @@ public:
 		const real_t pou = 1.0 / 3;          // start in the center of the triangle
 		const _real3 init(pou, pou, pou);
 
-		const _real3 bary   = iterate(iterate(init));		// two fixed point iterations seem to suffice
-		const _real3 normal = getnormal(bary).normalized();	// need normal to compute depth
-		const  real_t  depth  = (tvp * bary).dot(normal);		// compute depth along normal
+		const _real3  bary   = iterate(iterate(init));		// two fixed point iterations seem to suffice
+		const _real3  normal = getnormal(bary).normalized();	// need normal to compute depth
+		const  real_t depth  = (tvp * bary).dot(normal);		// compute depth along normal
 
 		return std::make_tuple(bary.transpose(), normal.transpose(), depth);
 	}
@@ -172,7 +172,8 @@ public:
 
 				//call the body; this tells us what to think of this triangle-vertex pair
 				const auto ret = body(t, v, tvp, tvn);
-				const Action action = std::get<0>(ret);
+				const auto action       = std::get<0>(ret);
+                const auto intersection = std::get<1>(ret);
 
 				if (action == Action::Ignore) return;
 				if (action == Action::Store) info.count += 1;			//register novel interaction
@@ -180,7 +181,7 @@ public:
 				//store the result
 				std::tie(info.bary    [v],
 					     info.normal  [v],
-					     info.depth   [v]) = std::get<1>(ret);		//ret is a tuple of tuples...
+					     info.depth   [v]) = intersection;		//ret is a tuple of tuples...
 				         info.triangle[v] = t;
 			});
 		}
@@ -190,23 +191,23 @@ public:
 	/* collide vertexgrid and trianglemesh, building up collision info */
 	void triangles_versus_points() {
 		for_each_pair([&](	//loop over all nearby triangle-vertex pairs
-			const index_t t, const index_t v,
+			const index_t t,   const index_t v,
 			const real33& tvp, const real33& tvn					//triangle vertex positions and normals
 		) {
 			//intersect translated triangle, and unpack results
 			const auto  intersection(triangle_point_test(tvp.colwise() - grid.position[v].transpose(), tvn));
-			const real3 bary(std::get<0>(intersection));
-			const real_t  d   (std::get<2>(intersection));
+			const real3  bary (std::get<0>(intersection));
+			const real_t depth(std::get<2>(intersection));
 
 			//decide what to do with the intersection result?
 			const Action action((
-				d > +mesh.inner ||	//check intersection result for bounds
-				d < -mesh.outer ||
+				depth > +mesh.inner ||	//check intersection result for bounds
+				depth < -mesh.outer ||
 				(bary < 0).any()) ?
 				    Action::Ignore :			            // if out of bounds, ignore
 				    info.triangle[v] == -1 ?		        // check for novelty
         				Action::Store :			            // if novel, store
-        				d*d < info.depth[v]*info.depth[v] ? // check for superiority
+        				depth*depth < info.depth[v]*info.depth[v] ? // check for superiority
             				Action::Overwrite :		        // if superior, overwrite
             				Action::Ignore);
 
@@ -217,22 +218,22 @@ public:
 
 	void unit_test() {
 		//test triangle iteration and lookup
-		for (auto t : boost::irange(0, mesh.n_triangles)) {
-			std::vector<int> clever;
-			for_each_vertex_in_triangle(t, [&](auto v) {clever.push_back(v);});
+		for (index_t t : boost::irange(0, mesh.n_triangles)) {
+			std::vector<index_t> clever;
+			for_each_vertex_in_triangle(t, [&](index_t v) {clever.push_back(v);});
 			boost::sort(clever);
 
-			std::vector<int> naive;
-			for_each_vertex_in_triangle_naive(t, [&](auto v) {naive.push_back(v);});
+			std::vector<index_t> naive;
+			for_each_vertex_in_triangle_naive(t, [&](index_t v) {naive.push_back(v);});
 			boost::sort(naive);
 
 			if (!boost::equal(clever, naive)) {
 				boost::copy(
 					clever,
-					std::ostream_iterator<int>(std::cout, ","));
+					std::ostream_iterator<index_t>(std::cout, ","));
 				boost::copy(
 					naive,
-					std::ostream_iterator<int>(std::cout, ","));
+					std::ostream_iterator<index_t>(std::cout, ","));
 
 				throw python_exception("bug in triangle iteration detected!");
 			}

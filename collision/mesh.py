@@ -99,7 +99,7 @@ class Mesh(PolyData):
         """
         Compute vertex normals, by averaging the weighted sum of its incident face normals.
         """
-        assert self.is_orientated(), 'Vertex normals require an oriented segment'
+        # assert self.is_orientated(), 'Vertex normals require an oriented segment'
 
         fnormals = self.face_normals()
         vnormals = np.zeros_like(self.vertices)

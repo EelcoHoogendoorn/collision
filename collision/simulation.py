@@ -201,7 +201,8 @@ if __name__=='__main__':
     turtle = Mesh.load_stl('part0.stl')
     # normalize orientation
     u, s, v = np.linalg.svd(turtle.vertices, full_matrices=0)
-    turtle.vertices = turtle.vertices.dot(v[:, [1,2,0]]) * 3 + np.array([0,0,2], np.float32)
+    # v[:, [1, 2, 0]] on other machine
+    turtle.vertices = turtle.vertices.dot(v) * 3 + np.array([0,0,2], np.float32)
     # turtle.faces = turtle.faces[:, ::-1]
 
     ico = icosphere(0.1, refinement=3)
@@ -211,7 +212,7 @@ if __name__=='__main__':
     d = .02
     actors = [StaticActor(turtle),
               Balloon(ball([0,0,-0.8]), e, d, c),
-              Balloon(ball([0,0.2,-0.6]), e, d, c),
+              # Balloon(ball([0,0.2,-0.6]), e, d, c),
               Balloon(ball([0,0,-0.2]), e, d, c),
               Balloon(ball([0,0,0]), e, d, c),
               ]

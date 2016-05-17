@@ -13,36 +13,23 @@
 #include "numpy_boost/ndarray.cpp"
 
 
-//used for hashing calcs
-std::array<int, 3> PRIMES = { 73856093, 19349663, 83492791 };
 
-
-template<typename key_type, typename value_type, int NDim>
+template<typename key_t, typename value_t, typename index_t>
 class HashMap {
 
-	typedef int                                         primes_type_scalar;
-	typedef Eigen::Array<primes_type_scalar, 1, NDim>   primes_type;
-	typedef int16                   key_type_scalar;    // eek: refactor this!
+	const index_t    n_items;   // number of items
+	const index_t    n_entries; // number of entries
+	const index_t    mask;      // bitmask for valid range
+	const index_t    prime;
 
-	const primes_type   primes;    // for hashing
-	const int           n_items;   // number of items
-	const int           n_entries; // number of entries
-	const int           mask;      // bitmask for valid range
-
-    ndarray<key_type>   keys;      // voxel coordinates uniquely identifying a bucket
-    ndarray<value_type> values;    // bucket description, or where to look in pivot array
-
-    // could use something like this for complete immutability
-//	struct items_type{
-//	    ndarray<key_type>   keys;      // voxel coordinates uniquely identifying a bucket
-//	    ndarray<value_type> values;    // bucket description, or where to look in pivot array
-//    };
+    ndarray<key_t>   keys;      // voxel coordinates uniquely identifying a bucket
+    ndarray<value_t> values;    // bucket description, or where to look in pivot array
 
 public:
 	// construct by zipping keys and values range
 	template<typename items_range>
 	HashMap(const items_range& items) :
-		primes      (init_primes()),
+	    prime       (73856093), // other options: { 73856093, 19349663, 83492791 }
 		n_items     (boost::distance(items)),
 		n_entries   (init_entries()),
 		mask        (n_entries - 1),
@@ -53,27 +40,19 @@ public:
 			write(boost::get<0>(item), boost::get<1>(item));
 	}
 
-	inline value_type operator[](const key_type& key) const {
-		int entry = get_hash(key);			//hash guess
-		while (true) {						//find the right entry
-			if ((keys[entry] == key).all())
-				return values[entry];	                // we found it; this should be the most common code path
-			if (values[entry] == -1) return -1;	    	// if we didnt find it yet by now, we never will
-			entry = (entry + 1) & mask;		            // circular increment
+	inline value_t operator[](const key_t& key) const {
+		index_t entry = get_hash(key);			// hash guess
+		while (true) {						    // find the right entry
+			if ((keys[entry] == key))
+				return values[entry];	        // we found it; this should be the most common code path
+			if (values[entry] == -1) return -1;	// if we didnt find it yet by now, we never will
+			entry = (entry + 1) & mask;		    // circular increment
 		}
 	}
 
 private:
-	// copy required number of primes into constant array
-	auto init_primes() const {
-		primes_type primes;
-		for (auto i : boost::irange(0, NDim))
-			primes(i) = PRIMES[i];
-		return primes;
-	}
-
-	inline void write(const key_type& key, value_type value) {
-		auto entry = get_hash(key);				// get entry initial guess
+	inline void write(const key_t& key, value_t value) {
+		index_t entry = get_hash(key);		    // get entry initial guess
 		while (true) {                          // find an empty entry
 			if (values[entry] == -1) break;     // found an empty entry
 			entry = (entry + 1) & mask;	        // circular increment
@@ -82,8 +61,8 @@ private:
 		keys[entry] = key;
 	}
 
-	inline auto get_hash(const key_type& key) const {
-		return (key.cast<primes_type_scalar>() * primes).redux(std::bit_xor<primes_type_scalar>()) & mask;
+	inline auto get_hash(const key_t& key) const {
+		return (key * prime) & mask;
 	}
 
 	auto init_entries() const{
@@ -94,19 +73,13 @@ private:
 	}
 
 	auto init_keys() const {
-		return ndarray<key_type_scalar, 2>({n_entries, NDim}).view<key_type>();
+		return ndarray<key_t>({n_entries});
 	}
 
 	auto init_values() const {
-		ndarray<value_type> values({n_entries});
+		ndarray<value_t> values({n_entries});
 		fill(values, -1); 		//mark grid as unoccupied
 		return values;
 	}
 
 };
-
-//// for checking if it matters anything in terms of performance
-//class StdMap : public std::map
-//{
-//
-//};

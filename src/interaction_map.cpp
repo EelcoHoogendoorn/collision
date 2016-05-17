@@ -48,12 +48,13 @@ class PointGrid {
 	*/
 
 public:
+    typedef real_t                          real_t;     // expose as public
 	typedef int32_t                         index_t;       // 32 bit int is a fine size type; 4 billion points isnt very likely
 	typedef int64_t                         hash_t;
+
 	typedef Eigen::Array<real_t,  2, NDim>	box_t;
 	typedef Eigen::Array<real_t,  1, NDim>	vector_t;
 	typedef Eigen::Array<fixed_t, 1, NDim>	cell_t;
-	typedef Eigen::Array<hash_t,  1, NDim>	strides_t;
 
 	const ndarray<vector_t>      position;    // positions
 	const index_t                n_points;    // number of points
@@ -61,23 +62,23 @@ public:
 
 	const box_t                  extents;     // maximum extent of pointcloud; used to map coordinates to positive integers
 	const cell_t                 shape;       // number of virtual buckets in each direction; used to prevent out-of-bound lookup
-	const strides_t              strides;     // for lex-ranking cells
+	const cell_t                 strides;     // for lex-ranking cells
 public:
-	const ndarray<cell_t>        cell_id;     // the cell coordinates a vertex resides in
+	const ndarray<fixed_t>       cell_id;     // the cell coordinates a vertex resides in
 	const ndarray<index_t>       permutation; // index array mapping the vertices to lexographically sorted order
 	const ndarray<index_t>       pivots;	     // boundaries between buckets of cells as viewed under permutation
 	const index_t                n_buckets;   // number of cells
 
-	const HashMap<cell_t, index_t, NDim> bucket_from_cell; // maps cell coordinates to bucket index
+	const HashMap<fixed_t, index_t, index_t> bucket_from_cell; // maps cell coordinates to bucket index
 
 public:
 	//interface methods
-	auto get_cells()        const { return cell_id.unview<fixed_t>(); }
+	auto get_cells()        const { return cell_id; }
 	auto get_permutation()  const { return permutation; }
 	auto get_pivots()       const { return pivots; }
-	void set_cells      (ndarray<fixed_t, 2> cells)    {}
-	void set_permutation(ndarray<index_t> permutation) {}
-	void set_pivots     (ndarray<index_t> pivots)      {}
+	void set_cells          (ndarray<fixed_t> cells)        {}
+	void set_permutation    (ndarray<index_t> permutation)  {}
+	void set_pivots         (ndarray<index_t> pivots)       {}
 
 	// constructor
 	explicit PointGrid(ndarray<real_t, 2> position, real_t lengthscale) :
@@ -93,7 +94,7 @@ public:
 		n_buckets	(pivots.size() - 1),
 		bucket_from_cell(       // create a map to invert the cell_from_bucket function
 			boost::combine(
-				irange(0, n_buckets) | transformed([&](auto b) {return cell_from_bucket(b);}),
+				irange(0, n_buckets) | transformed([&](index_t b) {return cell_from_bucket(b);}),
 				irange(0, n_buckets)
 			)
 		)
@@ -103,11 +104,11 @@ public:
 private:
 	//determine extents of data
 	auto init_extents() const {
-		auto inf = std::numeric_limits<real_t>::infinity();
+		real_t inf = std::numeric_limits<real_t>::infinity();
 		box_t extents;
 		extents.row(0).fill(+inf);
 		extents.row(1).fill(-inf);
-		for (auto p : position) {
+		for (vector_t p : position) {
 			extents.row(0) = extents.row(0).min(p);
 			extents.row(1) = extents.row(1).max(p);
 		}
@@ -120,7 +121,7 @@ private:
 	// find strides for efficient lexsort
 	auto init_strides() const {
 		//		boost::partial_sum(shape.cast<int>(), begin(strides), std::multiplies<int>());   // doesnt work somehow
-		strides_t strides;
+		cell_t strides;
 		strides(0) = 1;
 		for (auto i : irange(1, NDim))
 			strides(i) = strides(i - 1) * shape(i - 1);
@@ -128,10 +129,9 @@ private:
 	}
 	// determine grid cells
 	auto init_cells() const {
-		// silly indirection, because we cannot yet allocate custom type directly
-		auto cell_id = ndarray<fixed_t, 2>({ n_points, NDim }).view<cell_t>();
-		for (auto v : irange(0, n_points))
-			cell_id[v] = cell_from_position(position[v]);
+		auto cell_id = ndarray<fixed_t>({ n_points });
+		for (index_t v : irange(0, n_points))
+			cell_id[v] = hash_from_cell(cell_from_position(position[v]));
 		return cell_id;
 	}
 	// finds the index vector that puts the vertices in a lexographically sorted order
@@ -141,7 +141,7 @@ private:
 		boost::copy(irange(0, n_points), permutation.begin());
 		// branching-free lex sorting ftw
 		auto _cell_id = cell_id.range();
-		auto lex = [&](auto l, auto r) {return hash_from_cell(_cell_id[r] - _cell_id[l]) > 0;};
+		auto lex = [&](index_t l, index_t r) {return _cell_id[r] > _cell_id[l];};
         // wow, casting permutation to raw range yield factor 3 performance in sorted case
 		boost::sort(permutation.range(), lex);
 		return permutation;
@@ -152,15 +152,15 @@ private:
 		ndarray<index_t> pivots({ n_points });
 
 		index_t n_pivots = 0;		//number of pivots
-		auto add_pivot = [&](auto p) {pivots[n_pivots++] = p;};
+		auto add_pivot = [&](index_t p) {pivots[n_pivots++] = p;};
 
 		auto res = permutation
 			| transformed([&](auto i) {return cell_id[i];})
 			| indexed(0)
-			| adjacent_filtered([](auto a, auto b) {return (a.value() != b.value()).any();})
+			| adjacent_filtered([](auto a, auto b) {return a.value() != b.value();})
 			| transformed([](auto i) {return i.index();});
 
-		for (auto p : res)
+		for (index_t p : res)
 			add_pivot(p);
 		if (n_pivots == n_points)
 			throw python_exception("every vertex is in its own cell; lengthscale probably needs to go way up");
@@ -182,21 +182,21 @@ protected:
 		return cell_from_local_position(transform(v));
 	}
 	//convert bucket index into cell coords
-	inline cell_t cell_from_bucket(index_t b) const {
+	inline fixed_t cell_from_bucket(index_t b) const {
 		return cell_id[permutation[pivots[b]]];
 	}
-	inline hash_t hash_from_cell(cell_t cell) const {
-	    return (cell.cast<hash_t>() * strides).sum();
+	inline fixed_t hash_from_cell(cell_t cell) const {
+	    return (cell * strides).sum();
 	}
 
 protected:
 	auto indices_from_bucket(index_t b) const {
 		return (b == -1) ? irange(0, 0) : irange(pivots[b], pivots[b + 1]);
 	}
-	auto indices_from_cell(const cell_t& cell) const {
+	auto indices_from_cell(fixed_t cell) const {
 		return indices_from_bucket(bucket_from_cell[cell]);
 	}
-	auto vertices_from_cell(const cell_t& cell) const {
+	auto vertices_from_cell(fixed_t cell) const {
 		return indices_from_cell(cell)
 			| transformed([&](index_t i) {return permutation[i];});
 	}
@@ -204,8 +204,8 @@ protected:
 public:
 	// public traversal interface; what this class is all about
 	template <class F>
-	void for_each_vertex_in_cell(const cell_t& cell, const F& body) const {
-		for (auto v : vertices_from_cell(cell))
+	void for_each_vertex_in_cell(fixed_t cell, const F& body) const {
+		for (index_t v : vertices_from_cell(cell))
 			body(v);
 	}
 
@@ -220,10 +220,10 @@ public:
 	template <class F>
 	void for_each_vertex_in_bounding_box(const box_t& box, const F& body) const
 	{
-	    auto gmin = box.row(0);
-	    auto gmax = box.row(1);
+	    const vector_t gmin = box.row(0);
+	    const vector_t gmax = box.row(1);
 
-		const auto in_box = [&](auto v)
+		const auto in_box = [&](index_t v)
 		{
 			const vector_t& vp = position[v];
 			return !((vp < gmin).any() || (vp > gmax).any());
@@ -243,7 +243,7 @@ public:
 		for (auto x : irange(lb[0], ub[0]))
 			for (auto y : irange(lb[1], ub[1]))
 				for (auto z : irange(lb[2], ub[2]))
-					for (auto v : vertices_from_cell(cell_t(x, y, z)))
+					for (index_t v : vertices_from_cell(hash_from_cell(cell_t(x, y, z))))
 						if (in_box(v))
 							body(v);
 	}

@@ -11,8 +11,8 @@ boost python interface definition
 #include "triangle_mesh.cpp"
 #include "collision_info.cpp"
 
-typedef PointGrid<float32, int16, 2> Grid2d;
-typedef PointGrid<float32, int16, 3> Grid3d;
+typedef PointGrid<float32, int64, 2> Grid2d;
+typedef PointGrid<float32, int64, 3> Grid3d;
 
 typedef TriangleMesh<float32> Mesh;
 
@@ -30,6 +30,7 @@ BOOST_PYTHON_MODULE(Collision)
 	numpy_boost_python_register_type<int16, 1>();
 	numpy_boost_python_register_type<int16, 2>();
 	numpy_boost_python_register_type<int32, 1>();
+	numpy_boost_python_register_type<int64, 1>();
 	numpy_boost_python_register_type<int32, 2>();
 	numpy_boost_python_register_type<float32, 1>();
 	numpy_boost_python_register_type<float32, 2>();
