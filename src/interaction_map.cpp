@@ -66,8 +66,9 @@ public:
 public:
 	const ndarray<fixed_t>       cell_id;     // the cell coordinates a vertex resides in
 	const ndarray<index_t>       permutation; // index array mapping the vertices to lexographically sorted order
-	const ndarray<index_t>       pivots;	     // boundaries between buckets of cells as viewed under permutation
+	const ndarray<index_t>       pivots;	  // boundaries between buckets of cells as viewed under permutation
 	const index_t                n_buckets;   // number of cells
+	const ndarray<fixed_t>       stencil;	  // relative jumps to perform on grid to scan the entire stencil
 
 	const HashMap<fixed_t, index_t, index_t> bucket_from_cell; // maps cell coordinates to bucket index
 
@@ -92,6 +93,27 @@ public:
 		permutation	(init_permutation()),
 		pivots		(init_pivots()),
 		n_buckets	(pivots.size() - 1),
+		bucket_from_cell(       // create a map to invert the cell_from_bucket function
+			boost::combine(
+				irange(0, n_buckets) | transformed([&](index_t b) {return cell_from_bucket(b);}),
+				irange(0, n_buckets)
+			)
+		)
+	{   // empty constructor; noice
+	}
+
+	explicit PointGrid(ndarray<real_t, 2> position, real_t lengthscale, ndarray<index_t, 2> stencil) :
+		position	(position.view<vector_t>()),
+		n_points	(position.size()),
+		lengthscale	(lengthscale),
+		extents		(init_extents()),
+		shape		(init_shape()),
+		strides		(init_strides()),
+		cell_id		(init_cells()),
+		permutation	(init_permutation()),
+		pivots		(init_pivots()),
+		n_buckets	(pivots.size() - 1),
+		stencil     (init_stencil),
 		bucket_from_cell(       // create a map to invert the cell_from_bucket function
 			boost::combine(
 				irange(0, n_buckets) | transformed([&](index_t b) {return cell_from_bucket(b);}),
@@ -167,6 +189,12 @@ private:
 		add_pivot(n_points);
 
 		return pivots.resize(n_pivots);
+	}
+	auto init_stencil(ndarray<index_t, 2> stencil) const {
+	    offsets = ndarray<cell_t>({stencil.size()});
+	    for (index_t o : irange(0, stencil.size()))
+	        offsets[o] = hash_from_cell(stencil[o]);
+	    return offsets;
 	}
 
 

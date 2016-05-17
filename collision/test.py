@@ -74,4 +74,10 @@ def test_collision():
             print(info.depth[mask])
 
 
-test_basic()
+def test_point_point():
+    import itertools
+    stencil = [-1, 0, 1]
+    stencil = itertools.product(*[stencil]*3)
+    print(np.array(list(stencil)))
+
+test_point_point()
