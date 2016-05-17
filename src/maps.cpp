@@ -20,9 +20,9 @@ std::array<int, 3> PRIMES = { 73856093, 19349663, 83492791 };
 template<typename key_type, typename value_type, int NDim>
 class HashMap {
 
-	typedef int                                       primes_type_scalar;
+	typedef int                                         primes_type_scalar;
 	typedef Eigen::Array<primes_type_scalar, 1, NDim>   primes_type;
-	typedef int16                   key_type_scalar;
+	typedef int16                   key_type_scalar;    // eek: refactor this!
 
 	const primes_type   primes;    // for hashing
 	const int           n_items;   // number of items

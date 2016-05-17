@@ -20,36 +20,36 @@ but these may be needed many times per timestep
 should we iteratively deform the mesh along its normals, implementing normal calcs here would make sense too
 */
 
-template <typename real_type>
+template <typename real_t>
 class TriangleMesh {
 public:
 
-	typedef int32 index_type;
-	typedef Eigen::Array<index_type, 1, 3> triangle_type;
-	typedef Eigen::Array<real_type, 1, 3> vector_type;
-	typedef Eigen::Array<real_type, 2, 3> box_type;
+	typedef int32_t                     index_t;
+	typedef Eigen::Array<index_t, 1, 3> triangle_t;
+	typedef Eigen::Array<real_t,  1, 3> vector_t;
+	typedef Eigen::Array<real_t,  2, 3> box_t;
 
-	const index_type    n_triangles;
-	const index_type    n_vertices;
-	const real_type     inner;
-	const real_type     outer;
+	const index_t    n_triangles;
+	const index_t    n_vertices;
+	const real_t     inner;
+	const real_t     outer;
 
-	const ndarray<vector_type>      position;
-	const ndarray<vector_type>      normal;
-	const ndarray<triangle_type>    triangles;
-	const ndarray<box_type>         boxes;
+	const ndarray<vector_t>      position;
+	const ndarray<vector_t>      normal;
+	const ndarray<triangle_t>    triangles;
+	const ndarray<box_t>         boxes;
 
 
 	explicit TriangleMesh(
-		ndarray<real_type,  2> position,
-		ndarray<real_type,  2> normal,
-		ndarray<index_type, 2> triangles,
-		real_type inner,
-		real_type outer
+		ndarray<real_t,  2> position,
+		ndarray<real_t,  2> normal,
+		ndarray<index_t, 2> triangles,
+		real_t inner,
+		real_t outer
 	) :
-		position    (position.view<vector_type>()),
-		normal      (normal.view<vector_type>()),
-		triangles   (triangles.view<triangle_type>()),
+		position    (position.view<vector_t>()),
+		normal      (normal.view<vector_t>()),
+		triangles   (triangles.view<triangle_t>()),
 		inner       (inner),
 		outer       (outer),
 		n_vertices  (position.size()),
@@ -61,13 +61,13 @@ public:
 	//compute bounding box for each triangle
 	auto init_boxes() const
 	{
-		auto inf = std::numeric_limits<real_type>::infinity();
+		auto inf = std::numeric_limits<real_t>::infinity();
 
-		ndarray<box_type> boxes(ndarray<real_type, 2>({ n_triangles, 6 }).view<box_type>());
+		ndarray<box_t> boxes(ndarray<real_t, 2>({ n_triangles, 6 }).view<box_t>());
 
 		for (auto t : boost::irange(0, n_triangles))	//loop over all triangles
 		{
-			box_type& box = boxes[t];
+			box_t& box = boxes[t];
 			box.row(0).fill(+inf);
 			box.row(1).fill(-inf);
 
@@ -91,7 +91,7 @@ public:
 //        return Grid3d(vertices);
 //    }
 
-	auto get_boxes() { return boxes.unview<real_type>(); }
-	void set_boxes(ndarray<real_type, 2> b) {  }
+	auto get_boxes() { return boxes.unview<real_t>(); }
+	void set_boxes(ndarray<real_t, 2> b) {  }
 
 };
