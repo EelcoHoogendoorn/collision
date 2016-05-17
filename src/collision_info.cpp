@@ -98,7 +98,7 @@ public:
 	tvp are triangle vertex positions relative to origin point
 	tvn are triangle vertex normals
 	*/
-	static std::tuple<real3, real3, real_t> triangle_point_test(const _real33& tvp, const _real33& tvn) {
+	static auto triangle_point_test(const _real33& tvp, const _real33& tvn) {
 		auto getnormal = [&](const _real3& bary)   { return tvn * bary;};					//get normal, given a bary
 		auto getbary   = [&](const _real3& normal) { return area_project(tvp, normal);};	//get bary, given a normal
 		auto iterate   = [&](const _real3& bary)   { return getbary(getnormal(bary));};		//one iteration is a composition of the two
@@ -118,8 +118,8 @@ public:
 	//body signature is (vertexindex, triangleindex) -> void
 	template <class F>
 	void for_each_contact(const F& body) const {
-		for (auto p : boost::irange(0, vg.n_points)) {
-			auto t = triangle[p];
+		for (const index_t p : boost::irange(0, vg.n_points)) {
+			const index_t t = triangle[p];
 			if (t == -1) continue;	//skip unpaired points
 			body(p, t);
 		}
@@ -146,20 +146,20 @@ public:
 	void for_each_pair(const F& body) {
 		info.count = 0;			//initialize number of interactions
 
-		for (auto t : boost::irange(0, mesh.n_triangles)) {		//loop over triangles
+		for (const index_t t : boost::irange(0, mesh.n_triangles)) {		//loop over triangles
 			//some mutable optimizations
 			bool loaded = false;
 			triangle_t tvi;
 			real33 tvp, tvn;
 
 			//loop over all vertices in bounding box of triangle;
-			info.for_each_vertex_in_triangle(t, [&](const int v) {
+			info.for_each_vertex_in_triangle(t, [&](const index_t v) {
 				if (!loaded) {
 					//read triangle into local mem matrix for efficient geometry computations
 					//only needed if we hit a vertex at all
 					tvi = mesh.triangles[t];
-					for (auto i : boost::irange(0, 3)) {
-						auto c = tvi[i];
+					for (const index_t i : boost::irange(0, 3)) {
+						const index_t c = tvi[i];
 						tvp.col(i) = mesh.position[c];
 						tvn.col(i) = mesh.normal[c];
 					}
@@ -178,10 +178,10 @@ public:
 				if (action == Action::Store) info.count += 1;			//register novel interaction
 
 				//store the result
-				info.triangle[v] = t;
-				std::tie(info.bary[v],
-					     info.normal[v],
-					     info.depth[v]) = std::get<1>(ret);		//ret is a tuple of tuples...
+				std::tie(info.bary    [v],
+					     info.normal  [v],
+					     info.depth   [v]) = std::get<1>(ret);		//ret is a tuple of tuples...
+				         info.triangle[v] = t;
 			});
 		}
 	}

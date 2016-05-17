@@ -132,10 +132,12 @@ class Scene(object):
                 if i == j: continue
                 info = spatial.Info(grids[i], meshes[j], i==j)
                 mask = info.triangle != -1
-                active = np.flatnonzero(mask)
+                active = np.flatnonzero(mask)   # active vertex idx
                 if np.any(mask):# and not isinstance(ai, StaticActor):
-                    velocity = aj.velocity[aj.mesh.faces[info.triangle[active]]]
+                    triangle = info.triangle[active]
                     bary = info.bary[active]
+
+                    velocity = aj.velocity[aj.mesh.faces[triangle]]
                     velocity = np.einsum('vtc,vt->vc', velocity, bary)
                     relative_velocity = ai.velocity[active] - velocity
 
@@ -145,7 +147,7 @@ class Scene(object):
                     assert not np.any(np.isnan(force))
 
                     np.add.at(ai.force, active, force)
-                    corners = aj.mesh.faces[info.triangle[active]]
+                    corners = aj.mesh.faces[triangle]
                     for i in range(3):
                         np.add.at(aj.force, corners[:, i], -bary[:, [i]] * force)
                         # aj.force[corners[:,i]] -= info.bary[:, i] * force
