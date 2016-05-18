@@ -7,7 +7,8 @@ https://github.com/julienr/boost_numpy_eigen
 
 add improved mode funcs
 
-apply integer encoding scheme more generally; instead of computing integer encoding on the fly,
-replace all cell calculations with it directly
 
-implement grid offset for point-point on python level?
+expose overloaded constructors in interface;
+would be nice to be able to construct from existing pointgrid, so we can init permutation by copying
+
+another speedup possibility; map triangle bbs to pointgrid; then intersect occupied cells before further processing

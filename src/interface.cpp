@@ -30,6 +30,7 @@ BOOST_PYTHON_MODULE(Collision)
 	numpy_boost_python_register_type<int16, 1>();
 	numpy_boost_python_register_type<int16, 2>();
 	numpy_boost_python_register_type<int32, 1>();
+	numpy_boost_python_register_type<Grid3d::index_t, 2>();
 	numpy_boost_python_register_type<int64, 1>();
 	numpy_boost_python_register_type<int32, 2>();
 	numpy_boost_python_register_type<float32, 1>();
@@ -49,6 +50,7 @@ BOOST_PYTHON_MODULE(Collision)
 		.add_property("permutation",&Grid3d::get_permutation, &Grid3d::set_permutation)
 		.add_property("pivots",     &Grid3d::get_pivots,      &Grid3d::set_pivots)
 		.def_readonly("n_buckets",  &Grid3d::n_buckets)
+//        .def("get_pairs", &Grid3d::get_pairs)
 //		.def("unit_test", &Grid3::unit_test)
 		;
 

@@ -247,7 +247,7 @@ public:
 	//loop over each occupied cell in the grid
 	template <class F>
 	void for_each_cell(const F& body) const {
-		for (index_type b : irange(0, n_buckets))
+		for (index_t b : irange(0, n_buckets))
 			body(cell_from_bucket(b));
 	}
 
@@ -301,7 +301,7 @@ public:
 
 	//symmetric iteration over all vertex pairs, summing reaction forces
 	template <class F>
-	void for_each_vertex_pair(const F& body)
+	void for_each_vertex_pair(const F& body) const
 	{
 		const real_t ls2 = lengthscale*lengthscale;
 
@@ -314,8 +314,7 @@ public:
 		};
 
 		//loop over all buckets
-		for_each_cell([&](const fixed_t ci)
-		{
+		for_each_cell([&](const fixed_t ci) {
             const auto bi = vertices_from_cell(ci);
 			//interaction within bucket
 			for (index_t vi : bi)
@@ -328,7 +327,20 @@ public:
 				for (const index_t vj : bj)		//loop over other guy first; he might be empty, giving early exit
 					for (const index_t vi : bi)
 						wrapper(vi, vj);
-			});
+			}
 		});
+	}
+    // compute [n, 2] array of all paris within length_scale distance
+	auto get_pairs() const
+	{
+	    typedef Eigen::Array<index_t, 1, 2> pair_t;
+	    std::vector<pair_t> pairs;
+	    for_each_vertex_pair([&](index_t i, index_t j, real_t d2) {
+	        pairs.push_back(pair_t(i, j));
+	    });
+	    index_t n_pairs(pairs.size());
+	    ndarray<pair_t> _pairs({n_pairs});
+        boost::copy(pairs, _pairs.begin());
+        return _pairs.unview<index_t>();
 	}
 };
