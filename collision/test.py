@@ -84,10 +84,31 @@ def test_collision():
             print(info.depth[mask])
 
 
+def GridSpec(points, scale):
+    spectypemap = {2: spatial.Spec2d, 3: spatial.Spec3d}
+    n_points, n_dim = points.shape
+    return spectypemap[n_dim](points, scale)
+
+def PointGrid(spec, points, offset):
+    gridtypemap = {2: spatial.Grid2d, 3: spatial.Grid3d}
+    n_points, n_dim = points.shape
+    return gridtypemap[n_dim](spec, points, offset)
+
+
 def test_point_point():
     import itertools
     stencil = [-1, 0, 1]
-    stencil = itertools.product(*[stencil]*3)
-    print(np.array(list(stencil)))
+    ndim = 3
+    stencil = itertools.product(*[stencil]*ndim)
+    stencil = np.array(list(stencil)).astype(np.int32)
+    print (stencil.strides)
+    points = np.random.rand(20, ndim).astype(np.float32)
+    scale = 0.2
 
-test_performance()
+    spec = GridSpec(points, float(scale))
+    offsets = spec.stencil(stencil).astype(np.int32)
+    print(offsets)
+    grid = PointGrid(spec, points, offsets)
+
+
+test_point_point()

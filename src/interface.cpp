@@ -35,24 +35,28 @@ BOOST_PYTHON_MODULE(Collision)
 	numpy_boost_python_register_type<int32, 1>();
 //	numpy_boost_python_register_type<Grid3d::index_t, 2>();
 	numpy_boost_python_register_type<int64, 1>();
+	numpy_boost_python_register_type<int64, 2>();
 	numpy_boost_python_register_type<int32, 2>();
 	numpy_boost_python_register_type<float32, 1>();
 	numpy_boost_python_register_type<float32, 2>();
 
 
 	class_<Spec2d>("Spec2d", init<ndarray<float32, 2>, float32>())
+	    .def("stencil", &Spec2d::compute_offsets)
 		;
-	class_<Grid2d>("Grid2d", init<Spec2d, ndarray<float32, 2>>())
+	class_<Grid2d>("Grid2d", init<Spec2d, ndarray<float32, 2>, ndarray<Grid2d::index_t>>())
 		.add_property("cells",      &Grid2d::get_cells,       &Grid2d::set_cells)
 		.add_property("permutation",&Grid2d::get_permutation, &Grid2d::set_permutation)
 		.add_property("pivots",     &Grid2d::get_pivots,      &Grid2d::set_pivots)
 		.def_readonly("n_buckets",  &Grid2d::n_buckets)
+//        .def("get_pairs", &Grid2d::get_pairs)
 //		.def("unit_test", &Grid2::unit_test)
 		;
 
 	class_<Spec3d>("Spec3d", init<ndarray<float32, 2>, float32>())
+	    .def("stencil", &Spec3d::compute_offsets)
 		;
-	class_<Grid3d>("Grid3d", init<Spec3d, ndarray<float32, 2>>())
+	class_<Grid3d>("Grid3d", init<Spec3d, ndarray<float32, 2>, ndarray<Grid3d::index_t>>())
 		.add_property("cells",      &Grid3d::get_cells,       &Grid3d::set_cells)
 		.add_property("permutation",&Grid3d::get_permutation, &Grid3d::set_permutation)
 		.add_property("pivots",     &Grid3d::get_pivots,      &Grid3d::set_pivots)

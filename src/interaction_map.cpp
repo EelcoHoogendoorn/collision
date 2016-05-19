@@ -13,6 +13,7 @@
 
 #include <boost/range/adaptor/indexed.hpp>
 #include <boost/range/adaptor/transformed.hpp>
+#include <boost/range/adaptor/filtered.hpp>
 #include <boost/range/adaptor/adjacent_filtered.hpp>
 //#include <boost/range/adaptors.hpp>       // somehow gives a link error?
 
@@ -27,17 +28,17 @@ using namespace boost;
 using namespace boost::adaptors;
 
 
-/*
-vertex grid spatial collision map
-this provides O(1) spatial lookups with no requirements at all on the point layout,
-the datastructures are easy to construct and avoid dynamic allocation or cache-unfriendly structures
+template<typename range_t>
+auto ndarray_from_range(const range_t input) {
+    typedef typename range_value<range_t>::type element_t;
+    std::vector<element_t> tmp;
+    for (element_t e : input)
+        tmp.push_back(e);
+    ndarray<element_t> output({(int32)tmp.size()});
+    copy(tmp, output.begin());
+    return output;
+}
 
-since we use this for surfaces embedded in 3d space, the virtual voxel grid is quite sparse
-this makes a dense grid less attractive; plus the part of the datastructure that will require random access
-fits snugly in L1 cache
-
-the only way to make this faster would be to actively reorder the input points, to exploit temporal coherency in the lexsort
-*/
 
 
 template<typename real_t, typename fixed_t, int NDim>
@@ -113,6 +114,17 @@ public:
 		return (cell * strides).sum();
 	}
 
+	// initialize the stencil of hash offsets
+	ndarray<hash_t> compute_offsets(ndarray<fixed_t, 2> stencil) const {
+        auto arr = ndarray_from_range(
+            stencil.view<cell_t>()
+                | transformed([&](cell_t c){return hash_from_cell(c);})
+                | filtered([&](hash_t h){return h > 0;})
+                );
+        boost::sort(arr);
+        return arr;
+	}
+
 };
 
 
@@ -120,15 +132,13 @@ public:
 template<typename spec_t>
 class PointGrid {
 	/*
-	this datastructure allows for coarse/braod collision queries
-	it is one of the most simple datastructures to implement and debug,
-	and is chosen here with future GPU-porting in mind, as it maps well to parallel architectures
+	provide spatial lookup in O(1) time for n-dimensional point clouds
 	*/
 
 public:
     typedef PointGrid<spec_t>				self_t;
-    typedef typename spec_t::real_t         real_t;     // expose as public
-	typedef typename spec_t::index_t		index_t;       // 32 bit int is a fine size type; 4 billion points isnt very likely
+    typedef typename spec_t::real_t         real_t;
+	typedef typename spec_t::index_t		index_t;
 	typedef typename spec_t::hash_t			hash_t;
 	typedef typename spec_t::fixed_t		fixed_t;
 
@@ -145,6 +155,8 @@ public:
 	const ndarray<index_t>       permutation; // index array mapping the vertices to lexographically sorted order
 	const ndarray<index_t>       pivots;	  // boundaries between buckets of cells as viewed under permutation
 	const index_t                n_buckets;   // number of cells
+	const ndarray<index_t>       offsets;	  // determines stencil
+
 	const HashMap<fixed_t, index_t, index_t> bucket_from_cell; // maps cell coordinates to bucket index
 
 public:
@@ -175,7 +187,29 @@ public:
 	{
 	}
 	// constructor
-	explicit PointGrid(spec_t spec, ndarray<real_t, 2> position, ndarray<index_t> permutation) :
+	explicit PointGrid(spec_t spec, ndarray<real_t, 2> position, ndarray<index_t> offsets) :
+		spec(spec),
+		position(position.view<vector_t>()),
+		n_points(position.size()),
+		cell_id(init_cells()),
+		permutation(init_permutation()),
+		pivots(init_pivots()),
+		n_buckets(pivots.size() - 1),
+		offsets(offsets),
+		bucket_from_cell(       // create a map to invert the cell_from_bucket function
+			boost::combine(
+				irange(0, n_buckets) | transformed([&](index_t b) {return cell_from_bucket(b);}),
+				irange(0, n_buckets)
+			)
+		)
+	{
+	}
+
+	// create a new pointgrid, using the permutation of existing pointgrid as initial guess
+	self_t update(const ndarray<real_t, 2> position) {
+	    return self_t(spec, position, permutation, offsets);
+	}
+	explicit PointGrid(spec_t spec, ndarray<real_t, 2> position, ndarray<index_t> permutation, ndarray<index_t> offsets) :
 		spec		(spec),
 		position	(position.view<vector_t>()),
 		n_points	(position.size()),
@@ -191,13 +225,6 @@ public:
 		)
 	{
 	}
-
-	// create a new pointgrid, using the permutation of existing pointgrid as initial guess
-	self_t update(const ndarray<real_t, 2> position) {
-	    return self_t(spec, position, permutation);
-	}
-
-
 
 private:
 	// determine grid cells
@@ -337,7 +364,7 @@ public:
 			const vector_t rp = position[vi] - position[vj];
 			const real_t d2 = (rp*rp).sum();
 			if (d2 > ls2) return;
-			body(vi,vj,d2);  // store index pair
+			body(vi, vj, d2);  // store index pair
 		};
 
 		//loop over all buckets
@@ -349,7 +376,7 @@ public:
 					if (vi==vj) break; else
 						wrapper(vi, vj);
 			//loop over all neighboring buckets
-			for (index_t o : stencil) {
+			for (index_t o : offsets) {
 				const auto bj = vertices_from_cell(ci + o);
 				for (const index_t vj : bj)		//loop over other guy first; he might be empty, giving early exit
 					for (const index_t vi : bi)
@@ -358,9 +385,10 @@ public:
 		});
 	}
     // compute [n, 2] array of all paris within length_scale distance
-	auto get_pairs() const
+	ndarray<index_t, 2> get_pairs() const
 	{
 	    typedef Eigen::Array<index_t, 1, 2> pair_t;
+
 	    std::vector<pair_t> pairs;
 	    for_each_vertex_pair([&](index_t i, index_t j, real_t d2) {
 	        pairs.push_back(pair_t(i, j));
@@ -368,7 +396,8 @@ public:
 	    index_t n_pairs(pairs.size());
 	    ndarray<pair_t> _pairs({n_pairs});
         boost::copy(pairs, _pairs.begin());
-        return _pairs.unview<index_t>();
+        ndarray<index_t, 2> output = _pairs.unview<index_t>();
+        return output;
 	}
 
 };
