@@ -43,8 +43,10 @@ the only way to make this faster would be to actively reorder the input points, 
 template<typename real_t, typename fixed_t, int NDim>
 class GridSpec {
 public:
-	typedef GridSpec<real_t, fixed_t, NDim> self_t;
+	typedef fixed_t                         fixed_t;     // expose as public
 	typedef real_t                          real_t;     // expose as public
+
+	typedef GridSpec<real_t, fixed_t, NDim> self_t;
 	typedef int32_t                         index_t;       // 32 bit int is a fine size type; 4 billion points isnt very likely
 	typedef int64_t                         hash_t;
 
@@ -59,11 +61,11 @@ public:
 	const cell_t                 strides;     // for lex-ranking cells
 
 	GridSpec(ndarray<real_t, 2> position, real_t scale) :
-		scale(scale),
-		box(init_box(position)),
-		shape(init_shape()),
-		strides(init_strides()),
-		stencil(init_stencil(stencil))
+		scale	(scale),
+		box		(init_box(position)),
+		shape	(init_shape()),
+		strides	(init_strides())
+//		stencil	(init_stencil(stencil))
 	{
 	}
 
@@ -97,7 +99,7 @@ private:
 public:
 	//map a global coord into the grid local coords
 	inline vector_t transform(const vector_t& v) const {
-		return (v - extents.row(0)) / scale;
+		return (v - box.row(0)) / scale;
 	}
 	inline cell_t cell_from_local_position(const vector_t& v) const {
 		return v.cast<fixed_t>();	// we want to round towards zero; surprised that we do not need a -0.5 for that..
@@ -113,7 +115,7 @@ public:
 
 
 
-template<typename real_t, typename fixed_t, int NDim>
+template<typename spec_t>
 class PointGrid {
 	/*
 	this datastructure allows for coarse/braod collision queries
@@ -122,29 +124,25 @@ class PointGrid {
 	*/
 
 public:
-    typedef PointGrid<real_t, fixed_t, NDim> self_t;
-    typedef real_t                          real_t;     // expose as public
-	typedef int32_t                         index_t;       // 32 bit int is a fine size type; 4 billion points isnt very likely
-	typedef int64_t                         hash_t;
+    typedef PointGrid<spec_t>				self_t;
+    typedef typename spec_t::real_t         real_t;     // expose as public
+	typedef typename spec_t::index_t		index_t;       // 32 bit int is a fine size type; 4 billion points isnt very likely
+	typedef typename spec_t::hash_t			hash_t;
+	typedef typename spec_t::fixed_t		fixed_t;
 
-	typedef Eigen::Array<real_t,  2, NDim>	box_t;
-	typedef Eigen::Array<real_t,  1, NDim>	vector_t;
-	typedef Eigen::Array<fixed_t, 1, NDim>	cell_t;
+	typedef typename spec_t::box_t			box_t;
+	typedef typename spec_t::vector_t		vector_t;
+	typedef typename spec_t::cell_t			cell_t;
 
+	const spec_t				 spec;
 	const ndarray<vector_t>      position;    // positions
 	const index_t                n_points;    // number of points
-	const real_t                 lengthscale; // size of a virtual voxel
 
-	const box_t                  extents;     // maximum extent of pointcloud; used to map coordinates to positive integers
-	const cell_t                 shape;       // number of virtual buckets in each direction; used to prevent out-of-bound lookup
-	const cell_t                 strides;     // for lex-ranking cells
 public:
 	const ndarray<fixed_t>       cell_id;     // the cell coordinates a vertex resides in
 	const ndarray<index_t>       permutation; // index array mapping the vertices to lexographically sorted order
 	const ndarray<index_t>       pivots;	  // boundaries between buckets of cells as viewed under permutation
 	const index_t                n_buckets;   // number of cells
-	const ndarray<fixed_t>       stencil;	  // relative jumps to perform on grid to scan the entire stencil
-
 	const HashMap<fixed_t, index_t, index_t> bucket_from_cell; // maps cell coordinates to bucket index
 
 public:
@@ -156,101 +154,49 @@ public:
 	void set_permutation    (ndarray<index_t> permutation)  {}
 	void set_pivots         (ndarray<index_t> pivots)       {}
 
+
 	// constructor
-	explicit PointGrid(ndarray<real_t, 2> position, real_t lengthscale) :
-		position	(position.view<vector_t>()),
-		n_points	(position.size()),
-		lengthscale	(lengthscale),
-		extents		(init_extents()),
-		shape		(init_shape()),
-		strides		(init_strides()),
-		cell_id		(init_cells()),
-		permutation	(init_permutation()),
-		pivots		(init_pivots()),
-		n_buckets	(pivots.size() - 1),
-		stencil     (init_stencil()),
+	explicit PointGrid(spec_t spec, ndarray<real_t, 2> position) :
+		spec(spec),
+		position(position.view<vector_t>()),
+		n_points(position.size()),
+		cell_id(init_cells()),
+		permutation(init_permutation()),
+		pivots(init_pivots()),
+		n_buckets(pivots.size() - 1),
 		bucket_from_cell(       // create a map to invert the cell_from_bucket function
 			boost::combine(
 				irange(0, n_buckets) | transformed([&](index_t b) {return cell_from_bucket(b);}),
 				irange(0, n_buckets)
 			)
 		)
-	{   // empty constructor; noice
+	{
+	}
+	// constructor
+	explicit PointGrid(spec_t spec, ndarray<real_t, 2> position, ndarray<index_t> permutation) :
+		spec		(spec),
+		position	(position.view<vector_t>()),
+		n_points	(position.size()),
+		cell_id		(init_cells()),
+		permutation	(init_permutation(permutation)),
+		pivots		(init_pivots()),
+		n_buckets	(pivots.size() - 1),
+		bucket_from_cell(       // create a map to invert the cell_from_bucket function
+			boost::combine(
+				irange(0, n_buckets) | transformed([&](index_t b) {return cell_from_bucket(b);}),
+				irange(0, n_buckets)
+			)
+		)
+	{
 	}
 
-	explicit PointGrid(ndarray<real_t, 2> position, real_t lengthscale, ndarray<index_t, 2> stencil) :
-		position	(position.view<vector_t>()),
-		n_points	(position.size()),
-		lengthscale	(lengthscale),
-		extents		(init_extents()),
-		shape		(init_shape()),
-		strides		(init_strides()),
-		cell_id		(init_cells()),
-		permutation	(init_permutation()),
-		pivots		(init_pivots()),
-		n_buckets	(pivots.size() - 1),
-		stencil     (init_stencil(stencil)),
-		bucket_from_cell(       // create a map to invert the cell_from_bucket function
-			boost::combine(
-				irange(0, n_buckets) | transformed([&](index_t b) {return cell_from_bucket(b);}),
-				irange(0, n_buckets)
-			)
-		)
-	{   // empty constructor; noice
-	}
-
-	explicit PointGrid(ndarray<real_t, 2> position, real_t lengthscale, ndarray<index_t> initial_permutation) :
-		position	(position.view<vector_t>()),
-		n_points	(position.size()),
-		lengthscale	(lengthscale),
-		extents		(init_extents()),
-		shape		(init_shape()),
-		strides		(init_strides()),
-		cell_id		(init_cells()),
-		permutation	(init_permutation(initial_permutation)),
-		pivots		(init_pivots()),
-		n_buckets	(pivots.size() - 1),
-		stencil     (init_stencil()),
-		bucket_from_cell(       // create a map to invert the cell_from_bucket function
-			boost::combine(
-				irange(0, n_buckets) | transformed([&](index_t b) {return cell_from_bucket(b);}),
-				irange(0, n_buckets)
-			)
-		)
-	{   // empty constructor; noice
-	}
 
 private:
-	//determine extents of data
-	auto init_extents() const {
-		real_t inf = std::numeric_limits<real_t>::infinity();
-		box_t extents;
-		extents.row(0).fill(+inf);
-		extents.row(1).fill(-inf);
-		for (vector_t p : position) {
-			extents.row(0) = extents.row(0).min(p);
-			extents.row(1) = extents.row(1).max(p);
-		}
-		return extents;
-	}
-	// integer shape of the domain
-	cell_t init_shape() const {      // interestingly, using auto as return type fails spectacularly
-		return transform(extents.row(1) - extents.row(0)).cast<fixed_t>() + 1;	// use +0.5 before cast?
-	}
-	// find strides for efficient lexsort
-	auto init_strides() const {
-		//		boost::partial_sum(shape.cast<int>(), begin(strides), std::multiplies<int>());   // doesnt work somehow
-		cell_t strides;
-		strides(0) = 1;
-		for (auto i : irange(1, NDim))
-			strides(i) = strides(i - 1) * shape(i - 1);
-		return strides;
-	}
 	// determine grid cells
 	auto init_cells() const {
 		auto cell_id = ndarray<fixed_t>({ n_points });
 		for (index_t v : irange(0, n_points))
-			cell_id[v] = hash_from_cell(cell_from_position(position[v]));
+			cell_id[v] = spec.hash_from_cell(spec.cell_from_position(position[v]));
 		return cell_id;
 	}
 	// finds the index vector that puts the vertices in a lexographically sorted order
@@ -266,7 +212,7 @@ private:
 		auto _cell_id = cell_id.range();
 		auto lex = [&](index_t l, index_t r) {return _cell_id[r] > _cell_id[l];};
         // wow, casting permutation to raw range yield factor 3 performance in sorted case
-		boost::sort(permutation.range(), lex);
+		boost::sort(_permutation.range(), lex);
 		return _permutation;
 	}
 	//divide the sorted vertices into buckets, containing vertices in the same virtual voxel
@@ -291,44 +237,13 @@ private:
 
 		return pivots.resize(n_pivots);
 	}
-	// initialize the stencil of hash offsets
-	auto init_stencil() const {
-	    return init_stencil(ndarray<index_t, 2>({0, NDim}));
-	}
-	auto init_stencil(ndarray<index_t, 2> _stencil) const {
-	    index_t stencil_size(stencil.size());
-	    ndarray<index_t> offsets({stencil_size});
-        index_t n_offsets = 0;
-
-//	    for (cell_t c : _stencil.view<cell_t>()) {
-//	        fixed_t hash = hash_from_cell(c);
-//	        if (hash > 0)
-//	            offsets[n_offsets++] = hash;
-//	    }
-	    return offsets.resize(n_offsets);
-	}
 
 
 protected:
-	//map a global coord into the grid local coords
-	inline vector_t transform(const vector_t& v) const {
-		return (v - extents.row(0)) / lengthscale;
-	}
-	inline cell_t cell_from_local_position(const vector_t& v) const {
-		return v.cast<fixed_t>();	// we want to round towards zero; surprised that we do not need a -0.5 for that..
-	}
-	inline cell_t cell_from_position(const vector_t& v) const {
-		return cell_from_local_position(transform(v));
-	}
 	//convert bucket index into cell coords
 	inline fixed_t cell_from_bucket(index_t b) const {
 		return cell_id[permutation[pivots[b]]];
 	}
-	inline fixed_t hash_from_cell(cell_t cell) const {
-	    return (cell * strides).sum();
-	}
-
-protected:
 	auto indices_from_bucket(index_t b) const {
 		return (b == -1) ? irange(0, 0) : irange(pivots[b], pivots[b + 1]);
 	}
@@ -368,21 +283,21 @@ public:
 			return !((vp < gmin).any() || (vp > gmax).any());
 		};
 
-		const vector_t lmin = transform(gmin);
-		const vector_t lmax = transform(gmax);
+		const vector_t lmin = spec.transform(gmin);
+		const vector_t lmax = spec.transform(gmax);
 
 		//intersected volume is not positive; bail
-		if ((lmin.max(vector_t(0, 0, 0)) > lmax.min(shape.cast<real_t>())).any()) return;
+		if ((lmin.max(vector_t(0, 0, 0)) > lmax.min(spec.shape.cast<real_t>())).any()) return;
 
 		//compute local cell coords; constrain to [0-shape)
-		const cell_t lb =  cell_from_local_position(lmin).max(cell_t(0, 0, 0));
-		const cell_t ub = (cell_from_local_position(lmax) + 1).min(shape);
+		const cell_t lb =  spec.cell_from_local_position(lmin).max(cell_t(0, 0, 0));
+		const cell_t ub = (spec.cell_from_local_position(lmax) + 1).min(spec.shape);
 
 		//loop over all cells that intersect with bb
 		for (auto x : irange(lb[0], ub[0]))
 			for (auto y : irange(lb[1], ub[1]))
 				for (auto z : irange(lb[2], ub[2]))
-					for (index_t v : vertices_from_cell(hash_from_cell(cell_t(x, y, z))))
+					for (index_t v : vertices_from_cell(spec.hash_from_cell(cell_t(x, y, z))))
 						if (in_box(v))
 							body(v);
 	}
@@ -396,7 +311,7 @@ public:
 			return !((vp < box.row(0)).any() || (vp > box.row(1)).any());
 		};
 
-		if ((box.row(0) > extents.row(1)).any() || (box.row(1) < extents.row(0)).any()) return;
+		if ((box.row(0) > spec.box.row(1)).any() || (box.row(1) < spec.box.row(0)).any()) return;
 
 		for (auto v : irange(0, n_points))
 			if (in_box(v))
@@ -407,7 +322,7 @@ public:
 	template <class F>
 	void for_each_vertex_pair(const F& body) const
 	{
-		const real_t ls2 = lengthscale*lengthscale;
+		const real_t ls2 = spec.scale*spec.scale;
 
 		//this function wraps sign conventions regarding relative position and force
 		const auto wrapper = [&](const index_t vi, const index_t vj){
@@ -450,6 +365,6 @@ public:
 
 	// create a new pointgrid, using the permutation of existing pointgrid as initial guess
 	self_t update(const ndarray<real_t, 2> position) {
-	    return self_t(position, lengthscale, permutation);
+	    return self_t(spec, position, permutation);
 	}
 };

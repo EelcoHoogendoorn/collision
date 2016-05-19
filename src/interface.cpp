@@ -11,8 +11,11 @@ boost python interface definition
 #include "triangle_mesh.cpp"
 #include "collision_info.cpp"
 
-typedef PointGrid<float32, int64, 2> Grid2d;
-typedef PointGrid<float32, int64, 3> Grid3d;
+typedef GridSpec<float32, int64, 2> Spec2d;
+typedef GridSpec<float32, int64, 3> Spec3d;
+
+typedef PointGrid<Spec2d> Grid2d;
+typedef PointGrid<Spec3d> Grid3d;
 
 typedef TriangleMesh<float32> Mesh;
 
@@ -37,7 +40,7 @@ BOOST_PYTHON_MODULE(Collision)
 	numpy_boost_python_register_type<float32, 2>();
 
 
-	class_<Grid2d>("Grid2d", init<ndarray<float32, 2>, float32>())
+	class_<Grid2d>("Grid2d", init<Spec2d, ndarray<float32, 2>>())
 		.add_property("cells",      &Grid2d::get_cells,       &Grid2d::set_cells)
 		.add_property("permutation",&Grid2d::get_permutation, &Grid2d::set_permutation)
 		.add_property("pivots",     &Grid2d::get_pivots,      &Grid2d::set_pivots)
@@ -45,7 +48,7 @@ BOOST_PYTHON_MODULE(Collision)
 //		.def("unit_test", &Grid2::unit_test)
 		;
 
-	class_<Grid3d>("Grid3d", init<ndarray<float32, 2>, float32>())
+	class_<Grid3d>("Grid3d", init<Spec3d, ndarray<float32, 2>>())
 		.add_property("cells",      &Grid3d::get_cells,       &Grid3d::set_cells)
 		.add_property("permutation",&Grid3d::get_permutation, &Grid3d::set_permutation)
 		.add_property("pivots",     &Grid3d::get_pivots,      &Grid3d::set_pivots)

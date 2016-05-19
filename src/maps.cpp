@@ -40,29 +40,32 @@ public:
 			write(boost::get<0>(item), boost::get<1>(item));
 	}
 
-	inline value_t operator[](const key_t& key) const {
-		index_t entry = get_hash(key);			// hash guess
-		while (true) {						    // find the right entry
+	inline value_t operator[](const key_t key) const {
+        for (index_t entry : circular_view(key)) {
 			if ((keys[entry] == key))
 				return values[entry];	        // we found it; this should be the most common code path
 			if (values[entry] == -1) return -1;	// if we didnt find it yet by now, we never will
-			entry = (entry + 1) & mask;		    // circular increment
 		}
 	}
 
 private:
-	inline void write(const key_t& key, value_t value) {
-		index_t entry = get_hash(key);		    // get entry initial guess
-		while (true) {                          // find an empty entry
-			if (values[entry] == -1) break;     // found an empty entry
-			entry = (entry + 1) & mask;	        // circular increment
-		}
-		values[entry] = value;
-		keys[entry] = key;
+	inline void write(const key_t key, const value_t value) {
+        for (index_t entry : circular_view(key))
+			if (values[entry] == -1) {
+                values[entry] = value;
+                keys[entry] = key;
+                return;
+            }
 	}
 
-	inline auto get_hash(const key_t& key) const {
-		return (key * prime) & mask;
+	auto circular_view(const key_t key) const {
+		index_t entry = get_hash(key);		    // get entry initial guess
+		return irange(entry, entry + n_entries)
+		            | transformed([&](index_t i){return i & mask;});
+	}
+
+	inline auto get_hash(const key_t key) const {
+		return key * prime;
 	}
 
 	auto init_entries() const{
