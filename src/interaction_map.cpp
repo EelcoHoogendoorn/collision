@@ -70,13 +70,13 @@ public:
 	}
 
 private:
-	//determine extents of data
-	auto init_box() const {
+	//determine bounding box from point cloud positions
+	auto init_box(ndarray<real_t, 2> position) const {
 		real_t inf = std::numeric_limits<real_t>::infinity();
 		box_t box;
 		box.row(0).fill(+inf);
 		box.row(1).fill(-inf);
-		for (vector_t p : position) {
+		for (vector_t p : position.view<vector_t>()) {
 			box.row(0) = box.row(0).min(p);
 			box.row(1) = box.row(1).max(p);
 		}

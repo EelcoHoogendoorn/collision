@@ -40,6 +40,8 @@ BOOST_PYTHON_MODULE(Collision)
 	numpy_boost_python_register_type<float32, 2>();
 
 
+	class_<Spec2d>("Spec2d", init<ndarray<float32, 2>, float32>())
+		;
 	class_<Grid2d>("Grid2d", init<Spec2d, ndarray<float32, 2>>())
 		.add_property("cells",      &Grid2d::get_cells,       &Grid2d::set_cells)
 		.add_property("permutation",&Grid2d::get_permutation, &Grid2d::set_permutation)
@@ -48,6 +50,8 @@ BOOST_PYTHON_MODULE(Collision)
 //		.def("unit_test", &Grid2::unit_test)
 		;
 
+	class_<Spec3d>("Spec3d", init<ndarray<float32, 2>, float32>())
+		;
 	class_<Grid3d>("Grid3d", init<Spec3d, ndarray<float32, 2>>())
 		.add_property("cells",      &Grid3d::get_cells,       &Grid3d::set_cells)
 		.add_property("permutation",&Grid3d::get_permutation, &Grid3d::set_permutation)

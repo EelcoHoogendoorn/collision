@@ -20,12 +20,14 @@ def test_performance():
     # warmup run for mem allocation
     lengthscale = 0.03
     points = np.random.rand(3000000, 3).astype(np.float32)
-    grid = spatial.Grid3d(points, (lengthscale))
+    spec = spatial.Spec3d(points, lengthscale)
+
+    grid = spatial.Grid3d(spec, points)
 
     # run on unsorted data
     points = np.random.rand(3000000, 3).astype(np.float32)
     start = time.clock()
-    grid = spatial.Grid3d(points, (lengthscale))
+    grid = spatial.Grid3d(spec, points)
     unsorted = time.clock() - start
 
     # sort data
@@ -33,7 +35,7 @@ def test_performance():
 
     # run on sorted data
     start = time.clock()
-    grid = spatial.Grid3d(points, lengthscale)
+    grid = spatial.Grid3d(spec, points)
     sorted = time.clock() - start
 
     print(unsorted, sorted)
@@ -80,4 +82,4 @@ def test_point_point():
     stencil = itertools.product(*[stencil]*3)
     print(np.array(list(stencil)))
 
-test_point_point()
+test_performance()
