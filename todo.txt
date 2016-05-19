@@ -12,3 +12,6 @@ expose overloaded constructors in interface;
 would be nice to be able to construct from existing pointgrid, so we can init permutation by copying
 
 another speedup possibility; map triangle bbs to pointgrid; then intersect occupied cells before further processing
+
+add objectgrid besides pointgrid?
+would be nice if we can map triangles to objectgrid; derived class of pointgrid

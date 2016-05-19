@@ -19,16 +19,24 @@ def test_basic():
 def test_performance():
     # warmup run for mem allocation
     lengthscale = 0.03
-    points = np.random.rand(3000000, 3).astype(np.float32)
+    n = 300000
+    points = np.random.rand(n, 3).astype(np.float32)
     spec = spatial.Spec3d(points, lengthscale)
 
+    start = time.clock()
     grid = spatial.Grid3d(spec, points)
+    warmup = time.clock() - start
 
     # run on unsorted data
-    points = np.random.rand(3000000, 3).astype(np.float32)
+    points = np.random.rand(n, 3).astype(np.float32)
     start = time.clock()
     grid = spatial.Grid3d(spec, points)
     unsorted = time.clock() - start
+
+    # update from existing
+    start = time.clock()
+    grid = grid.update(points)
+    update = time.clock() - start
 
     # sort data
     points = points[grid.permutation]
@@ -38,7 +46,7 @@ def test_performance():
     grid = spatial.Grid3d(spec, points)
     sorted = time.clock() - start
 
-    print(unsorted, sorted)
+    print(warmup, unsorted, update, sorted)
 
 
 def test_mesh():

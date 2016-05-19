@@ -42,6 +42,9 @@ the only way to make this faster would be to actively reorder the input points, 
 
 template<typename real_t, typename fixed_t, int NDim>
 class GridSpec {
+    /* helper class which stores the defining properties of a grid
+    */
+
 public:
 	typedef fixed_t                         fixed_t;     // expose as public
 	typedef real_t                          real_t;     // expose as public
@@ -54,11 +57,10 @@ public:
 	typedef Eigen::Array<real_t, 1, NDim>	vector_t;
 	typedef Eigen::Array<fixed_t, 1, NDim>	cell_t;
 
-	const real_t                 scale; // size of a virtual voxel
-
-	const box_t                  box;         // maximum extent of pointcloud; used to map coordinates to positive integers
-	const cell_t                 shape;       // number of virtual buckets in each direction; used to prevent out-of-bound lookup
-	const cell_t                 strides;     // for lex-ranking cells
+	const real_t scale;    // size of a virtual voxel
+	const box_t  box;      // maximum extent of pointcloud; used to map coordinates to positive integers
+	const cell_t shape;    // number of virtual buckets in each direction; used to prevent out-of-bound lookup
+	const cell_t strides;  // for lex-ranking cells
 
 	GridSpec(ndarray<real_t, 2> position, real_t scale) :
 		scale	(scale),
@@ -189,6 +191,12 @@ public:
 		)
 	{
 	}
+
+	// create a new pointgrid, using the permutation of existing pointgrid as initial guess
+	self_t update(const ndarray<real_t, 2> position) {
+	    return self_t(spec, position, permutation);
+	}
+
 
 
 private:
@@ -363,8 +371,4 @@ public:
         return _pairs.unview<index_t>();
 	}
 
-	// create a new pointgrid, using the permutation of existing pointgrid as initial guess
-	self_t update(const ndarray<real_t, 2> position) {
-	    return self_t(spec, position, permutation);
-	}
 };
