@@ -48,6 +48,7 @@ class PointGrid {
 	*/
 
 public:
+    typedef PointGrid<real_t, fixed_t, NDim> self_t;
     typedef real_t                          real_t;     // expose as public
 	typedef int32_t                         index_t;       // 32 bit int is a fine size type; 4 billion points isnt very likely
 	typedef int64_t                         hash_t;
@@ -93,6 +94,7 @@ public:
 		permutation	(init_permutation()),
 		pivots		(init_pivots()),
 		n_buckets	(pivots.size() - 1),
+		stencil     (init_stencil()),
 		bucket_from_cell(       // create a map to invert the cell_from_bucket function
 			boost::combine(
 				irange(0, n_buckets) | transformed([&](index_t b) {return cell_from_bucket(b);}),
@@ -113,7 +115,28 @@ public:
 		permutation	(init_permutation()),
 		pivots		(init_pivots()),
 		n_buckets	(pivots.size() - 1),
-		stencil     (init_stencil),
+		stencil     (init_stencil(stencil)),
+		bucket_from_cell(       // create a map to invert the cell_from_bucket function
+			boost::combine(
+				irange(0, n_buckets) | transformed([&](index_t b) {return cell_from_bucket(b);}),
+				irange(0, n_buckets)
+			)
+		)
+	{   // empty constructor; noice
+	}
+
+	explicit PointGrid(ndarray<real_t, 2> position, real_t lengthscale, ndarray<index_t> initial_permutation) :
+		position	(position.view<vector_t>()),
+		n_points	(position.size()),
+		lengthscale	(lengthscale),
+		extents		(init_extents()),
+		shape		(init_shape()),
+		strides		(init_strides()),
+		cell_id		(init_cells()),
+		permutation	(init_permutation(initial_permutation)),
+		pivots		(init_pivots()),
+		n_buckets	(pivots.size() - 1),
+		stencil     (init_stencil()),
 		bucket_from_cell(       // create a map to invert the cell_from_bucket function
 			boost::combine(
 				irange(0, n_buckets) | transformed([&](index_t b) {return cell_from_bucket(b);}),
@@ -158,15 +181,19 @@ private:
 	}
 	// finds the index vector that puts the vertices in a lexographically sorted order
 	auto init_permutation() const {
-		ndarray<index_t> permutation({ n_points });
+	    return init_permutation(irange(0, n_points));
+	}
+	template<typename range_t>
+	auto init_permutation(const range_t initial_permutation) const {
+		ndarray<index_t> _permutation({ n_points });
 		// init with initial order; 0 to n
-		boost::copy(irange(0, n_points), permutation.begin());
+		boost::copy(initial_permutation, _permutation.begin());
 		// branching-free lex sorting ftw
 		auto _cell_id = cell_id.range();
 		auto lex = [&](index_t l, index_t r) {return _cell_id[r] > _cell_id[l];};
         // wow, casting permutation to raw range yield factor 3 performance in sorted case
 		boost::sort(permutation.range(), lex);
-		return permutation;
+		return _permutation;
 	}
 	//divide the sorted vertices into buckets, containing vertices in the same virtual voxel
 	auto init_pivots() const {
@@ -191,16 +218,19 @@ private:
 		return pivots.resize(n_pivots);
 	}
 	// initialize the stencil of hash offsets
-	auto init_stencil(ndarray<index_t, 2> stencil) const {
-	    offsets = ndarray<cell_t>({stencil.size()});
+	auto init_stencil() const {
+	    return init_stencil(ndarray<index_t, 2>({0, NDim}));
+	}
+	auto init_stencil(ndarray<index_t, 2> _stencil) const {
+	    index_t stencil_size(stencil.size());
+	    ndarray<index_t> offsets({stencil_size});
         index_t n_offsets = 0;
 
-	    auto push_back = [&](auto hash){offsets[n_offsets++] = hash;};
-
-	    for (index_t o : irange(0, stencil.size())) {
-	        auto hash = hash_from_cell(stencil[o]);
-	        if (hash > 0) push_back(hash);
-	    }
+//	    for (cell_t c : _stencil.view<cell_t>()) {
+//	        fixed_t hash = hash_from_cell(c);
+//	        if (hash > 0)
+//	            offsets[n_offsets++] = hash;
+//	    }
 	    return offsets.resize(n_offsets);
 	}
 
@@ -342,5 +372,10 @@ public:
 	    ndarray<pair_t> _pairs({n_pairs});
         boost::copy(pairs, _pairs.begin());
         return _pairs.unview<index_t>();
+	}
+
+	// create a new pointgrid, using the permutation of existing pointgrid as initial guess
+	self_t update(const ndarray<real_t, 2> position) {
+	    return self_t(position, lengthscale, permutation);
 	}
 };
