@@ -102,14 +102,29 @@ def test_point_point():
     stencil = itertools.product(*[stencil]*ndim)
     stencil = np.array(list(stencil)).astype(np.int32)
     print (stencil.strides)
-    points = np.random.rand(200, ndim).astype(np.float32)
-    scale = 0.2
+    points = np.random.rand(20000, ndim).astype(np.float32)
+    scale = 0.1
 
     spec = GridSpec(points, float(scale))
     offsets = spec.stencil(stencil).astype(np.int32)
     print(offsets)
+
+    start = time.clock()
     grid = PointGrid(spec, points, offsets)
+    construction = time.clock() - start
+
+    start = time.clock()
+    grid = PointGrid(spec, points[grid.permutation], offsets)
+    construction = time.clock() - start
+
+    start = time.clock()
     pairs = grid.get_pairs()
-    print(pairs.shape)
+    pairing = time.clock() - start
+
+    print(points.shape, pairs.shape, len(pairs) / len(points))
+    print(construction, pairing, pairing / construction)
+
+
 
 test_point_point()
+

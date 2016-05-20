@@ -7,11 +7,12 @@ https://github.com/julienr/boost_numpy_eigen
 
 add improved mode funcs
 
-
-expose overloaded constructors in interface;
-would be nice to be able to construct from existing pointgrid, so we can init permutation by copying
+further optimize pair generation
 
 another speedup possibility; map triangle bbs to pointgrid; then intersect occupied cells before further processing
-
 add objectgrid besides pointgrid?
 would be nice if we can map triangles to objectgrid; derived class of pointgrid
+
+implement simple particle system; self collision and mesh collision
+add vispy visual along these lines:
+https://www.opengl.org/discussion_boards/showthread.php/176323-Particle-simulation-OpenGl-Cuda-Shaders

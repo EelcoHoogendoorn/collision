@@ -6,7 +6,62 @@ from collision import math
 
 
 class Actor(object):
+
+    def collect_forces(self):
+        self.force[:] = 0
+
+
+class ParticleActor(Actor):
+    def __init__(self, position, scale):
+        self.position = position.astype(np.float32)
+        self.velocity = np.zeros_like(position)
+        self.scale = scale
+
+        self.force = np.zeros_like(self.position)
+
+        self.gravity = np.array([0, 0, -1])
+
+        bounds = np.array([[-100]*3, [100]*3]).astype(np.float32)
+        import itertools
+        stencil = [-1, 0, 1]
+        ndim = 3
+        stencil = itertools.product(*[stencil] * ndim)
+        stencil = np.array(list(stencil)).astype(np.int32)
+
+        spec = spatial.Spec3d(bounds, self.scale)
+        offsets = spec.stencil(stencil).astype(np.int32)
+
+        self.spatial_grid = spatial.Grid3d(spec, self.position, offsets)
+        self.mass = np.ones_like(self.position[:, 0])
+
+
+    def collision_prepare(self):
+        self.spatial_grid = self.spatial_grid.update(self.position)
+
+    def collision_self(self):
+        assert False, 'goteher'
+        pairs = self.spatial_grid.get_pairs()
+
+    def integrate(self, dt):
+        self.velocity += self.force * dt / self.mass[:, None]
+        self.position += self.velocity * dt
+
+    def collect_forces(self):
+        super(ParticleActor, self).collect_forces()
+        self.force += self.gravity * self.mass[:, None]
+
+
+    def init_visual(self, scene, parent):
+        self.visual = scene.visuals.Markers(
+            parent=parent)
+        self.visual.set_data(self.position)
+
+
+class MeshActor(Actor):
     def __init__(self, mesh):
+        assert mesh.volume() > 0
+        assert mesh.is_orientated()
+
         self.mesh = mesh
 
         self.position = self.mesh.vertices      # alias mesh vertices
@@ -16,8 +71,14 @@ class Actor(object):
 
         self.gravity = np.array([0, 0, -1])
 
+        self.spatial_grid = self.get_spatial_grid()
+
     def integrate(self, dt):
         pass
+
+    def collision_prepare(self):
+        self.spatial_grid = self.spatial_grid.update(self.position)
+        self.spatial_mesh = self.get_spatial_mesh()
 
     def get_spatial_grid(self):
         stencil = np.zeros((1), np.int32)
@@ -37,29 +98,15 @@ class Actor(object):
     def permute(self):
         """apply permutation of previously computed grid to all state variables"""
 
-    def collect_forces(self):
-        self.force[:] = 0
+    def init_visual(self, scene, parent):
+        self.visual = scene.visuals.Mesh(
+            self.mesh.vertices,
+            self.mesh.faces[:, ::+1],
+            shading='flat',
+            parent=parent)
 
 
-class ParticleActor(Actor):
-    def __init__(self, position, velocity, scale):
-        self.position = position
-        self.velocity = velocity
-        self.scale = scale
-        bounds = np.array([[-100]*3, [100]*3]).astype(np.float)
-        self.grid = spatial.Grid3d(spatial.spec3d(bounds, self.scale), self.position)
-
-    def get_grid(self):
-        return self.grid.update(self.position)
-
-    def interact(self):
-        grid = self.get_grid()
-
-
-class MeshActor(Actor):
-
-
-class StaticActor(Actor):
+class StaticActor(MeshActor):
     def __init__(self, mesh):
         super(StaticActor, self).__init__(mesh)
 
@@ -68,11 +115,14 @@ class StaticActor(Actor):
         self.get_spatial_grid = lambda : grid
         self.get_spatial_mesh = lambda : mesh
 
-class RigidActor(Actor):
+    def collision_prepare(self):
+        pass
+
+class RigidActor(MeshActor):
     """integrates all external forces into angular momentum quaternion"""
     pass
 
-class Nonridid(Actor):
+class Nonridid(MeshActor):
 
     def __init__(self, mesh, elasticity, damping):
         super(Nonridid, self).__init__(mesh)
@@ -131,9 +181,6 @@ class Balloon(Nonridid):
 class Scene(object):
     def __init__(self, actors):
         self.actors = actors
-        for a in actors:
-            assert a.mesh.volume() > 0
-            assert a.mesh.is_orientated()
 
     def integrate(self, dt):
         """integrate the state of the scene with a timestep dt"""
@@ -144,13 +191,15 @@ class Scene(object):
             a.integrate(dt)
 
     def collide(self):
-        grids = [a.get_spatial_grid() for a in self.actors]
-        meshes = [a.get_spatial_mesh() for a in self.actors]
+        for a in self.actors:
+            a.collision_prepare()
+        return
 
         for i, ai in enumerate(self.actors):
             for j, aj in enumerate(self.actors):
+                if aj.isinstance(ParticleActor): continue
                 if i == j: continue
-                info = spatial.Info(grids[i], meshes[j], i==j)
+                info = spatial.Info(ai.spatial_grid, aj.spatial_mesh, i==j)
                 mask = info.triangle != -1
                 active = np.flatnonzero(mask)   # active vertex idx
                 if np.any(mask):# and not isinstance(ai, StaticActor):
@@ -187,11 +236,8 @@ class Scene(object):
         # Set up a viewbox to display the image with interactive pan/zoom
         view = canvas.central_widget.add_view()
 
-        vis_meshes = [scene.visuals.Mesh(
-            actor.mesh.vertices,
-            actor.mesh.faces[:, ::+1],
-            shading='flat',
-            parent=view.scene) for actor in self.actors]
+        for a in self.actors:
+            a.init_visual(scene, view.scene)
 
         fov = 60.
         cam1 = scene.cameras.FlyCamera(parent=view.scene, fov=fov, name='Fly')
@@ -206,10 +252,11 @@ class Scene(object):
             # upload new state to gpu
             for i in range(len(self.actors)):
                 actor = self.actors[i]
-                if not isinstance(actor, StaticActor):
-                    m = vis_meshes[i]
-                    m.set_data(vertices=actor.position[actor.mesh.faces])
-
+                if isinstance(actor, MeshActor):
+                    if not isinstance(actor, StaticActor):
+                        actor.visual.set_data(vertices=actor.position[actor.mesh.faces])
+                if isinstance(actor, ParticleActor):
+                    actor.visual.set_data(actor.position)
 
         timer = app.Timer(interval=dt, connect=update)
 
@@ -235,6 +282,7 @@ if __name__=='__main__':
               # Balloon(ball([0,0.2,-0.6]), e, d, c),
               Balloon(ball([0,0,-0.2]), e, d, c),
               Balloon(ball([0,0,0]), e, d, c),
+              # ParticleActor(np.random.rand(200, 3) / 10 + [[0,0,2]], scale=0.1)
               ]
 
     scene = Scene(actors)
