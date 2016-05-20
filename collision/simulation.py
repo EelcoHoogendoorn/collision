@@ -41,6 +41,24 @@ class Actor(object):
         self.force[:] = 0
 
 
+class ParticleActor(Actor):
+    def __init__(self, position, velocity, scale):
+        self.position = position
+        self.velocity = velocity
+        self.scale = scale
+        bounds = np.array([[-100]*3, [100]*3]).astype(np.float)
+        self.grid = spatial.Grid3d(spatial.spec3d(bounds, self.scale), self.position)
+
+    def get_grid(self):
+        return self.grid.update(self.position)
+
+    def interact(self):
+        grid = self.get_grid()
+
+
+class MeshActor(Actor):
+
+
 class StaticActor(Actor):
     def __init__(self, mesh):
         super(StaticActor, self).__init__(mesh)
