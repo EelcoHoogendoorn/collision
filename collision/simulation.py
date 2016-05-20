@@ -22,7 +22,7 @@ class ParticleActor(Actor):
 
         self.gravity = np.array([0, 0, -1])
 
-        bounds = np.array([[-100]*3, [100]*3]).astype(np.float32)
+        bounds = np.array([[-10]*3, [10]*3]).astype(np.float32)
         import itertools
         stencil = [-1, 0, 1]
         ndim = 3
@@ -44,7 +44,7 @@ class ParticleActor(Actor):
         dist = np.linalg.norm(diff, axis=1)
         normal = diff / dist[:, None]
         depth = self.scale - dist
-        stiffness = 1e-2
+        stiffness = 2e0
         force = normal * depth[:, None] * stiffness
         np.add.at(self.force, s, force)
         np.add.at(self.force, e, -force)
@@ -289,11 +289,11 @@ if __name__=='__main__':
     c = 1e2
     d = .02
     actors = [StaticActor(turtle),
-              Balloon(ball([0,0,-0.8]), e, d, c),
+              # Balloon(ball([0,0,-0.8]), e, d, c),
               # Balloon(ball([0,0.2,-0.6]), e, d, c),
               # Balloon(ball([0,0,-0.2]), e, d, c),
               # Balloon(ball([0,0,0]), e, d, c),
-              ParticleActor(np.random.rand(200, 3) / 2 + [[0,0,-2]], scale=0.1)
+              ParticleActor(np.random.rand(500, 3) / 1 + [[1,0,-2.8]], scale=0.04)
               ]
 
     scene = Scene(actors)
