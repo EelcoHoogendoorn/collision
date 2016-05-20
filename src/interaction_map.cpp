@@ -305,7 +305,7 @@ public:
 			body(cell_from_bucket(b));
 	}
 
-	//loop over bounding box and apply body
+	//loop over bounding box and apply body; this should be moved to subclass really
 	template <class F>
 	void for_each_vertex_in_bounding_box(const box_t& box, const F& body) const
 	{
