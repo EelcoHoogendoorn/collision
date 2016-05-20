@@ -16,6 +16,7 @@ class ParticleActor(Actor):
         self.position = position.astype(np.float32)
         self.velocity = np.zeros_like(position)
         self.scale = scale
+        self.mass = np.ones_like(self.position[:, 0]) * 1e-4
 
         self.force = np.zeros_like(self.position)
 
@@ -27,20 +28,27 @@ class ParticleActor(Actor):
         ndim = 3
         stencil = itertools.product(*[stencil] * ndim)
         stencil = np.array(list(stencil)).astype(np.int32)
-
-        spec = spatial.Spec3d(bounds, self.scale)
-        offsets = spec.stencil(stencil).astype(np.int32)
-
-        self.spatial_grid = spatial.Grid3d(spec, self.position, offsets)
-        self.mass = np.ones_like(self.position[:, 0])
+        self.spec = spatial.Spec3d(bounds, self.scale)
+        self.offsets = self.spec.stencil(stencil).astype(np.int32)
+        self.spatial_grid = spatial.Grid3d(self.spec, self.position, self.offsets)
 
 
     def collision_prepare(self):
-        self.spatial_grid = self.spatial_grid.update(self.position)
+        # self.spatial_grid = self.spatial_grid.update(self.position)
+        self.spatial_grid = spatial.Grid3d(self.spec, self.position, self.offsets)
 
     def collision_self(self):
-        assert False, 'goteher'
         pairs = self.spatial_grid.get_pairs()
+        s, e = pairs.T
+        diff = self.position[s] - self.position[e]
+        dist = np.linalg.norm(diff, axis=1)
+        normal = diff / dist[:, None]
+        depth = self.scale - dist
+        stiffness = 1e-2
+        force = normal * depth[:, None] * stiffness
+        np.add.at(self.force, s, force)
+        np.add.at(self.force, e, -force)
+
 
     def integrate(self, dt):
         self.velocity += self.force * dt / self.mass[:, None]
@@ -77,7 +85,8 @@ class MeshActor(Actor):
         pass
 
     def collision_prepare(self):
-        self.spatial_grid = self.spatial_grid.update(self.position)
+        # self.spatial_grid = self.spatial_grid.update(self.position)
+        self.spatial_grid = self.get_spatial_grid()
         self.spatial_mesh = self.get_spatial_mesh()
 
     def get_spatial_grid(self):
@@ -110,10 +119,10 @@ class StaticActor(MeshActor):
     def __init__(self, mesh):
         super(StaticActor, self).__init__(mesh)
 
-        grid = self.get_spatial_grid()
-        mesh = self.get_spatial_mesh()
-        self.get_spatial_grid = lambda : grid
-        self.get_spatial_mesh = lambda : mesh
+        self.spatial_grid = self.get_spatial_grid()
+        self.spatial_mesh = self.get_spatial_mesh()
+        # self.get_spatial_grid = lambda : grid
+        # self.get_spatial_mesh = lambda : mesh
 
     def collision_prepare(self):
         pass
@@ -193,11 +202,13 @@ class Scene(object):
     def collide(self):
         for a in self.actors:
             a.collision_prepare()
-        return
 
         for i, ai in enumerate(self.actors):
+            if isinstance(ai, ParticleActor):
+                ai.collision_self()
             for j, aj in enumerate(self.actors):
-                if aj.isinstance(ParticleActor): continue
+                if isinstance(aj, ParticleActor):
+                    continue
                 if i == j: continue
                 info = spatial.Info(ai.spatial_grid, aj.spatial_mesh, i==j)
                 mask = info.triangle != -1
@@ -269,7 +280,7 @@ if __name__=='__main__':
     # normalize orientation
     u, s, v = np.linalg.svd(turtle.vertices, full_matrices=0)
     # v[:, [1, 2, 0]] on other machine
-    turtle.vertices = turtle.vertices.dot(v) * 3 + np.array([0,0,2], np.float32)
+    turtle.vertices = turtle.vertices.dot(v) * 3 + np.array([0,0,0], np.float32)
     # turtle.faces = turtle.faces[:, ::-1]
 
     ico = icosphere(0.1, refinement=3)
@@ -280,9 +291,9 @@ if __name__=='__main__':
     actors = [StaticActor(turtle),
               Balloon(ball([0,0,-0.8]), e, d, c),
               # Balloon(ball([0,0.2,-0.6]), e, d, c),
-              Balloon(ball([0,0,-0.2]), e, d, c),
-              Balloon(ball([0,0,0]), e, d, c),
-              # ParticleActor(np.random.rand(200, 3) / 10 + [[0,0,2]], scale=0.1)
+              # Balloon(ball([0,0,-0.2]), e, d, c),
+              # Balloon(ball([0,0,0]), e, d, c),
+              ParticleActor(np.random.rand(200, 3) / 2 + [[0,0,-2]], scale=0.1)
               ]
 
     scene = Scene(actors)

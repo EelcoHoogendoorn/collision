@@ -253,7 +253,7 @@ private:
 	//divide the sorted vertices into buckets, containing vertices in the same virtual voxel
 	auto init_pivots() const {
 		// allocate array of size n_points, becuase it plays nicely with the rest of our numpy mempool
-		ndarray<index_t> pivots({ n_points });
+		ndarray<index_t> pivots({ n_points+1 });
 
 		index_t n_pivots = 0;		//number of pivots
 		auto add_pivot = [&](index_t p) {pivots[n_pivots++] = p;};
@@ -266,8 +266,8 @@ private:
 
 		for (index_t p : res)
 			add_pivot(p);
-		if (n_pivots == n_points)
-			throw python_exception("every vertex is in its own cell; lengthscale probably needs to go way up");
+//		if (n_pivots == n_points)
+//			throw python_exception("every vertex is in its own cell; lengthscale probably needs to go way up");
 		add_pivot(n_points);
 
 		return pivots.resize(n_pivots);
