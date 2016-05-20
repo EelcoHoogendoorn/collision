@@ -20,9 +20,11 @@ class Actor(object):
         pass
 
     def get_spatial_grid(self):
+        stencil = np.zeros((1), np.int32)
         return spatial.Grid3d(
+            spatial.Spec3d(self.position, self.length_scale * 2),
             self.position,
-            self.length_scale * 2
+            stencil
         )
     def get_spatial_mesh(self):
         return spatial.Mesh(

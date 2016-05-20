@@ -49,7 +49,7 @@ BOOST_PYTHON_MODULE(Collision)
 		.add_property("permutation",&Grid2d::get_permutation, &Grid2d::set_permutation)
 		.add_property("pivots",     &Grid2d::get_pivots,      &Grid2d::set_pivots)
 		.def_readonly("n_buckets",  &Grid2d::n_buckets)
-//        .def("get_pairs", &Grid2d::get_pairs)
+        .def("get_pairs", &Grid2d::get_pairs)
 //		.def("unit_test", &Grid2::unit_test)
 		;
 
@@ -61,7 +61,7 @@ BOOST_PYTHON_MODULE(Collision)
 		.add_property("permutation",&Grid3d::get_permutation, &Grid3d::set_permutation)
 		.add_property("pivots",     &Grid3d::get_pivots,      &Grid3d::set_pivots)
 		.def_readonly("n_buckets",  &Grid3d::n_buckets)
-//        .def("get_pairs", &Grid3d::get_pairs)
+        .def("get_pairs", &Grid3d::get_pairs)
         .def("update", &Grid3d::update)
 //		.def("unit_test", &Grid3::unit_test)
 		;

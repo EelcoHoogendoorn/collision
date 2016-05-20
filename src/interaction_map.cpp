@@ -394,9 +394,15 @@ public:
 	        pairs.push_back(pair_t(i, j));
 	    });
 	    index_t n_pairs(pairs.size());
-	    ndarray<pair_t> _pairs({n_pairs});
-        boost::copy(pairs, _pairs.begin());
-        ndarray<index_t, 2> output = _pairs.unview<index_t>();
+//	    ndarray<pair_t> _pairs({n_pairs});
+//        boost::copy(pairs, _pairs.begin());
+//        ndarray<index_t, 2> output = _pairs.unview<index_t>();
+        ndarray<index_t, 2> output({ n_pairs, 2});
+        for (index_t i : irange(0, n_pairs))
+        {
+            output[i][0] = pairs[i][0];
+            output[i][1] = pairs[i][1];
+        }
         return output;
 	}
 

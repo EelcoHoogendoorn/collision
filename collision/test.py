@@ -102,13 +102,14 @@ def test_point_point():
     stencil = itertools.product(*[stencil]*ndim)
     stencil = np.array(list(stencil)).astype(np.int32)
     print (stencil.strides)
-    points = np.random.rand(20, ndim).astype(np.float32)
+    points = np.random.rand(200, ndim).astype(np.float32)
     scale = 0.2
 
     spec = GridSpec(points, float(scale))
     offsets = spec.stencil(stencil).astype(np.int32)
     print(offsets)
     grid = PointGrid(spec, points, offsets)
-
+    pairs = grid.get_pairs()
+    print(pairs.shape)
 
 test_point_point()
