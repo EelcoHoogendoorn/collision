@@ -16,3 +16,6 @@ would be nice if we can map triangles to objectgrid; derived class of pointgrid
 implement simple particle system; self collision and mesh collision
 add vispy visual along these lines:
 https://www.opengl.org/discussion_boards/showthread.php/176323-Particle-simulation-OpenGl-Cuda-Shaders
+
+current hash map may degrade performance for adversarial grid shapes.
+perhaps a binary-search-sorted map would be an improvement

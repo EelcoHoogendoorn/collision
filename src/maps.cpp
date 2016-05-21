@@ -13,9 +13,19 @@
 #include "numpy_boost/ndarray.cpp"
 
 
+template<typename key_t, typename value_t, typename index_t>
+class BaseMap {
+    /* interface of our custom map types; constructable from a range of key-value tuples, and read-only value lookup by key */
+
+//	template<typename items_range>
+//	BaseMap(const items_range& items) {};
+//
+//	inline value_t operator[](const key_t key) const {};
+};
 
 template<typename key_t, typename value_t, typename index_t>
 class HashMap {
+    /* key-value map based on hashing of keys */
 
 	const index_t    n_items;   // number of items
 	const index_t    n_entries; // number of entries
@@ -84,5 +94,11 @@ private:
 		fill(values, -1); 		//mark grid as unoccupied
 		return values;
 	}
+
+};
+
+
+class SortMap {
+    /* key-value map based on sorting of keys */
 
 };

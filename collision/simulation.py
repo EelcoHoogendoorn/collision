@@ -27,14 +27,17 @@ class ParticleActor(Actor):
         stencil = [-1, 0, 1]
         ndim = 3
         stencil = itertools.product(*[stencil] * ndim)
-        stencil = np.array(list(stencil)).astype(np.int32)
+        self.stencil = np.array(list(stencil)).astype(np.int32)
         self.spec = spatial.Spec3d(bounds, self.scale)
-        self.offsets = self.spec.stencil(stencil).astype(np.int32)
+        self.offsets = self.spec.stencil(self.stencil).astype(np.int32)
         self.spatial_grid = spatial.Grid3d(self.spec, self.position, self.offsets)
 
 
     def collision_prepare(self):
         # self.spatial_grid = self.spatial_grid.update(self.position)
+        # bounds = np.array([[-10]*3, [10]*3]).astype(np.float32)
+        self.spec = spatial.Spec3d(self.position, self.scale)
+        self.offsets = self.spec.stencil(self.stencil).astype(np.int32)
         self.spatial_grid = spatial.Grid3d(self.spec, self.position, self.offsets)
 
     def collision_self(self):
@@ -60,9 +63,13 @@ class ParticleActor(Actor):
 
 
     def init_visual(self, scene, parent):
-        self.visual = scene.visuals.Markers(
-            parent=parent)
-        self.visual.set_data(self.position)
+        if False:
+            self.visual = scene.visuals.Markers(parent=parent)
+            self.visual.set_data(self.position)
+        else:
+            import collision.visualize.spheres
+            self.visual = collision.visualize.spheres.Spheres(self.scale/2, parent=parent)
+            self.visual.set_data(self.position)
 
 
 class MeshActor(Actor):
@@ -254,6 +261,12 @@ class Scene(object):
         cam1 = scene.cameras.FlyCamera(parent=view.scene, fov=fov, name='Fly')
         view.camera = cam1
 
+        # def on_resize(self, event):
+        #     176  # setup the new viewport
+        #     gloo.set_viewport(0, 0, *event.physical_size)
+        #     w, h = event.size
+        #     self.projection = perspective(45.0, w / float(h), 1.0, 1000.0)
+        #     self.program['u_projection'] = self.projection
 
         dt = 0.002
         def update(event):
@@ -293,7 +306,7 @@ if __name__=='__main__':
               # Balloon(ball([0,0.2,-0.6]), e, d, c),
               # Balloon(ball([0,0,-0.2]), e, d, c),
               # Balloon(ball([0,0,0]), e, d, c),
-              ParticleActor(np.random.rand(500, 3) / 1 + [[1,0,-2.8]], scale=0.04)
+              ParticleActor(np.random.rand(100, 3) * [1,1,5] + [[0,-0.5,-2.8]], scale=0.1)
               ]
 
     scene = Scene(actors)
