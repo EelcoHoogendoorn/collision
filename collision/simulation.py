@@ -20,7 +20,7 @@ class ParticleActor(Actor):
 
         self.force = np.zeros_like(self.position)
 
-        self.gravity = np.array([0, 0, -1])
+        self.gravity = np.array([0, 0, -5])
 
         bounds = np.array([[-10]*3, [10]*3]).astype(np.float32)
         import itertools
@@ -82,7 +82,7 @@ class MeshActor(Actor):
         self.position = self.mesh.vertices      # alias mesh vertices
         self.velocity = np.zeros_like(self.position)
         self.force = np.zeros_like(self.position)
-        self.length_scale = float(mesh.edge_lengths().mean())
+        self.length_scale = float(mesh.edge_lengths().mean()) * 2
 
         self.gravity = np.array([0, 0, -1])
 
@@ -229,7 +229,7 @@ class Scene(object):
                     relative_velocity = ai.velocity[active] - velocity
 
                     friction = 1e-2
-                    stiffness = 3e1
+                    stiffness = 1e1
                     force = info.depth[active][:, None] * info.normal[active] * stiffness - relative_velocity * friction
                     assert not np.any(np.isnan(force))
 
@@ -306,7 +306,7 @@ if __name__=='__main__':
               # Balloon(ball([0,0.2,-0.6]), e, d, c),
               # Balloon(ball([0,0,-0.2]), e, d, c),
               # Balloon(ball([0,0,0]), e, d, c),
-              ParticleActor(np.random.rand(100, 3) * [1,1,5] + [[0,-0.5,-2.8]], scale=0.1)
+              ParticleActor(np.random.rand(1000, 3) * [2,2,5] + [[0,-0.5,-2.8]], scale=0.1)
               ]
 
     scene = Scene(actors)

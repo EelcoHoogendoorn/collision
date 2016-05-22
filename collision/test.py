@@ -1,9 +1,13 @@
+
+import time
+
 import numpy as np
+
+import numpy_indexed as npi
 
 import  collision.Collision as spatial
 from collision.mesh import Mesh, icosphere
 
-import time
 
 
 def test_basic():
@@ -95,7 +99,7 @@ def PointGrid(spec, points, offset):
     return gridtypemap[n_dim](spec, points, offset)
 
 
-def test_point_point():
+def test_point_performance():
     import itertools
     stencil = [-1, 0, 1]
     ndim = 3
@@ -121,10 +125,43 @@ def test_point_point():
     pairs = grid.get_pairs()
     pairing = time.clock() - start
 
+    from scipy.spatial import cKDTree
+    start = time.clock()
+    tree = cKDTree(points)
+    tree_construction = time.clock() - start
+    start = time.clock()
+    tree_pairs = tree.query_pairs(scale, output_type='ndarray')
+    tree_pairing = time.clock() - start
+
     print(points.shape, pairs.shape, len(pairs) / len(points))
     print(construction, pairing, pairing / construction)
+    print(tree_construction, tree_pairing)
 
 
+def test_point_correctness():
+    import itertools
+    stencil = [-1, 0, 1]
+    ndim = 3
+    n = 200
+    stencil = itertools.product(*[stencil]*ndim)
+    stencil = np.array(list(stencil)).astype(np.int32)
+    points = np.random.rand(n, ndim).astype(np.float32)
+    scale = 0.1
 
-test_point_point()
+    spec = GridSpec(points, float(scale))
+    offsets = spec.stencil(stencil).astype(np.int32)
+    grid = PointGrid(spec, points, offsets)
+
+    pairs = grid.get_pairs()
+
+    from scipy.spatial import cKDTree
+    tree = cKDTree(points)
+    tree_pairs = tree.query_pairs(scale, output_type='ndarray')
+    print(tree_pairs)
+    print(pairs)
+
+    assert np.alltrue(npi.unique(tree_pairs) == npi.unique(np.sort(pairs, axis=1)))
+
+
+test_point_correctness()
 
