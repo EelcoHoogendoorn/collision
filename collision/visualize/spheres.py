@@ -5,16 +5,16 @@
 # -----------------------------------------------------------------------------
 """
 Spheres Visual and shader definitions.
+
+Raytraces a sphere at each vertex
 """
 
 import numpy as np
 
 from vispy.color import ColorArray
-from vispy.gloo import VertexBuffer, _check_valid
-from vispy.visuals.shaders import Function, Variable
+from vispy.gloo import VertexBuffer
 from vispy.visuals.visual import Visual
 from vispy import scene
-
 
 
 vert = """
@@ -38,8 +38,7 @@ void main()
     gl_Position = $transform(vec4(a_position, 1.0));
 }
 """
-# gl_PointSize = pointRadius * (pointScale / dist);
-# gl_TexCoord[0] = gl_MultiTexCoord0;
+
 
 frag = """
 varying vec4 v_color;
@@ -61,7 +60,7 @@ void main()
     float diffuse = max(0.5, dot(lightDir, N));
 
     gl_FragColor = v_color * diffuse;
-    gl_FragColor[3] = 1;
+    gl_FragColor.a = 1;
 
     gl_FragDepth = gl_FragCoord.z - N.z * 0.00005f;
 }
@@ -74,8 +73,6 @@ class SpheresVisual(Visual):
         self._vbo = VertexBuffer()
         # self._v_size_var = Variable('varying float v_size')
         self._data = None
-        self.antialias = 1
-        self.scaling = True
         Visual.__init__(self, vcode=vert, fcode=frag)
 
         # m_window_h / tanf(m_fov * 0.5f * (float)M_PI / 180.0)

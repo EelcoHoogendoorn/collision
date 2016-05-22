@@ -3,6 +3,9 @@ import numpy as np
 import  collision.Collision as spatial
 from collision.mesh import Mesh, icosphere
 from collision import math
+import collision.visualize.spheres
+
+import itertools
 
 
 class Actor(object):
@@ -22,16 +25,11 @@ class ParticleActor(Actor):
 
         self.gravity = np.array([0, 0, -5])
 
-        bounds = np.array([[-10]*3, [10]*3]).astype(np.float32)
-        import itertools
         stencil = [-1, 0, 1]
-        ndim = 3
-        stencil = itertools.product(*[stencil] * ndim)
+        stencil = itertools.product(*[stencil] * 3)
         self.stencil = np.array(list(stencil)).astype(np.int32)
-        self.spec = spatial.Spec3d(bounds, self.scale)
-        self.offsets = self.spec.stencil(self.stencil).astype(np.int32)
-        self.spatial_grid = spatial.Grid3d(self.spec, self.position, self.offsets)
 
+        self.collision_prepare()
 
     def collision_prepare(self):
         # self.spatial_grid = self.spatial_grid.update(self.position)
@@ -40,6 +38,20 @@ class ParticleActor(Actor):
         self.offsets = self.spec.stencil(self.stencil).astype(np.int32)
         self.spatial_grid = spatial.Grid3d(self.spec, self.position, self.offsets)
 
+    def integrate(self, dt):
+        self.velocity += self.force * dt / self.mass[:, None]
+        self.position += self.velocity * dt
+
+    def collect_forces(self):
+        super(ParticleActor, self).collect_forces()
+        self.force += self.gravity * self.mass[:, None]
+
+    def init_visual(self, scene, parent):
+        self.visual = collision.visualize.spheres.Spheres(self.scale/2, parent=parent)
+        self.visual.set_data(self.position)
+
+
+class HardParticleActor(ParticleActor):
     def collision_self(self):
         pairs = self.spatial_grid.get_pairs()
         s, e = pairs.T
@@ -53,23 +65,11 @@ class ParticleActor(Actor):
         np.add.at(self.force, e, -force)
 
 
-    def integrate(self, dt):
-        self.velocity += self.force * dt / self.mass[:, None]
-        self.position += self.velocity * dt
-
-    def collect_forces(self):
-        super(ParticleActor, self).collect_forces()
-        self.force += self.gravity * self.mass[:, None]
-
-
-    def init_visual(self, scene, parent):
-        if False:
-            self.visual = scene.visuals.Markers(parent=parent)
-            self.visual.set_data(self.position)
-        else:
-            import collision.visualize.spheres
-            self.visual = collision.visualize.spheres.Spheres(self.scale/2, parent=parent)
-            self.visual.set_data(self.position)
+class FluidParticleActor(ParticleActor):
+    """
+    http://www.ligum.umontreal.ca/Clavet-2005-PVFS/pvfs.pdf
+    """
+    pass
 
 
 class MeshActor(Actor):
@@ -108,7 +108,7 @@ class MeshActor(Actor):
             self.position,
             self.mesh.vertex_normals(),
             np.ascontiguousarray(self.mesh.faces[:, ::+1]),
-            self.length_scale, 0.0
+            self.length_scale, 0
         )
 
     def permute(self):
@@ -213,6 +213,7 @@ class Scene(object):
         for i, ai in enumerate(self.actors):
             if isinstance(ai, ParticleActor):
                 ai.collision_self()
+
             for j, aj in enumerate(self.actors):
                 if isinstance(aj, ParticleActor):
                     continue
@@ -306,7 +307,7 @@ if __name__=='__main__':
               # Balloon(ball([0,0.2,-0.6]), e, d, c),
               # Balloon(ball([0,0,-0.2]), e, d, c),
               # Balloon(ball([0,0,0]), e, d, c),
-              ParticleActor(np.random.rand(1000, 3) * [2,2,5] + [[0,-0.5,-2.8]], scale=0.1)
+              HardParticleActor(np.random.rand(1000, 3) * [2,2,5] + [[0,-0.5,-2.8]], scale=0.1)
               ]
 
     scene = Scene(actors)
