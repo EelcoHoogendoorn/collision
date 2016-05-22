@@ -98,7 +98,7 @@ class FluidParticleActor(ParticleActor):
         pass
 
     def integrate(self, dt):
-        dt=0.3
+        dt=dt*100
         self.velocity = (self.position - self.previous_position) / dt
         self.velocity += self.force * dt
         self.previous_position = self.position.copy()
@@ -142,9 +142,9 @@ class MeshActor(Actor):
         self.position = self.mesh.vertices      # alias mesh vertices
         self.velocity = np.zeros_like(self.position)
         self.force = np.zeros_like(self.position)
-        self.length_scale = float(mesh.edge_lengths().mean()) * 2
+        self.length_scale = float(mesh.edge_lengths().mean())
 
-        self.gravity = np.array([0, 0, -1])
+        self.gravity = np.array([0, 0, -5])
 
         self.spatial_grid = self.get_spatial_grid()
 
@@ -365,12 +365,12 @@ if __name__=='__main__':
 
     grid_points = np.mgrid[0:10, 0:10, 0:10].reshape(3, -1).T * 0.05
     actors = [StaticActor(turtle),
-              # Balloon(ball([0,0,-0.8]), e, d, c),
+              Balloon(ball([0,0,-0.8]), e, d, c),
               # Balloon(ball([0,0.2,-0.6]), e, d, c),
               # Balloon(ball([0,0,-0.2]), e, d, c),
               # Balloon(ball([0,0,0]), e, d, c),
               # HardParticleActor(np.random.rand(1000, 3) * [2,2,5] + [[0,-0.5,-2.8]], scale=0.1)
-              FluidParticleActor(grid_points+ [[0, -0.5, -2.8]], scale=0.1)
+              FluidParticleActor(grid_points+ [[0, -0.5, -1.8]], scale=0.1)
               ]
 
     scene = Scene(actors)
