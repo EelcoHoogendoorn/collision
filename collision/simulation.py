@@ -363,7 +363,7 @@ if __name__=='__main__':
     c = 1e2
     d = .02
 
-    grid_points = np.mgrid[0:10, 0:10, 0:10].reshape(3, -1).T * 0.05
+    grid_points = np.mgrid[0:6, 0:6, 0:40].reshape(3, -1).T * 0.05
     actors = [StaticActor(turtle),
               Balloon(ball([0,0,-0.8]), e, d, c),
               # Balloon(ball([0,0.2,-0.6]), e, d, c),
