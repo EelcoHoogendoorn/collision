@@ -80,7 +80,8 @@ class FluidParticleActor(ParticleActor):
         self.neutral_density = 10
 
         self.position = np.ascontiguousarray(position.astype(np.float32))
-        self.previous_position = position.copy()
+        self.previous_position = self.position.copy()
+        self.velocity = np.zeros_like(self.position)
         self.mass = np.ones_like(self.position[:, 0]) * 1e-4
 
         self.force = np.zeros_like(self.position)
@@ -88,7 +89,7 @@ class FluidParticleActor(ParticleActor):
         self.far = np.zeros_like(self.mass)
         self.near = np.zeros_like(self.mass)
 
-        self.gravity = np.array([0, 0, -0])
+        self.gravity = np.array([0, 0, -5])
 
         self.stencil_prepare()
         self.collision_prepare()
@@ -99,7 +100,7 @@ class FluidParticleActor(ParticleActor):
     def integrate(self, dt):
         dt=0.3
         self.velocity = (self.position - self.previous_position) / dt
-        self.velocity += self.gravity * dt
+        self.velocity += self.force * dt
         self.previous_position = self.position.copy()
         self.position += self.velocity * dt
         self.relaxation(dt)
