@@ -16,7 +16,7 @@ class Actor(object):
 
 class ParticleActor(Actor):
     def __init__(self, position, scale):
-        self.position = position.astype(np.float32)
+        self.position = np.ascontiguousarray(position.astype(np.float32))
         self.velocity = np.zeros_like(position)
         self.scale = scale
         self.mass = np.ones_like(self.position[:, 0]) * 1e-4
@@ -25,11 +25,14 @@ class ParticleActor(Actor):
 
         self.gravity = np.array([0, 0, -5])
 
+        self.stencil_prepare()
+        self.collision_prepare()
+
+    def stencil_prepare(self):
         stencil = [-1, 0, 1]
         stencil = itertools.product(*[stencil] * 3)
         self.stencil = np.array(list(stencil)).astype(np.int32)
 
-        self.collision_prepare()
 
     def collision_prepare(self):
         # self.spatial_grid = self.spatial_grid.update(self.position)
@@ -69,7 +72,63 @@ class FluidParticleActor(ParticleActor):
     """
     http://www.ligum.umontreal.ca/Clavet-2005-PVFS/pvfs.pdf
     """
-    pass
+
+    def __init__(self, position, scale):
+        self.scale = scale
+        self.k_far = 0.004
+        self.k_near = 0.01
+        self.neutral_density = 10
+
+        self.position = np.ascontiguousarray(position.astype(np.float32))
+        self.previous_position = position.copy()
+        self.mass = np.ones_like(self.position[:, 0]) * 1e-4
+
+        self.force = np.zeros_like(self.position)
+
+        self.far = np.zeros_like(self.mass)
+        self.near = np.zeros_like(self.mass)
+
+        self.gravity = np.array([0, 0, -0])
+
+        self.stencil_prepare()
+        self.collision_prepare()
+
+    def collision_self(self):
+        pass
+
+    def integrate(self, dt):
+        dt=0.3
+        self.velocity = (self.position - self.previous_position) / dt
+        self.velocity += self.gravity * dt
+        self.previous_position = self.position.copy()
+        self.position += self.velocity * dt
+        self.relaxation(dt)
+
+    def relaxation(self, dt):
+        pairs = self.spatial_grid.get_pairs()
+        s, e = pairs.T
+        diff = self.position[s] - self.position[e]
+        dist = np.linalg.norm(diff, axis=1)
+
+        weight = 1 - dist / self.scale
+
+        self.far[:] = 0
+        far  = weight * weight
+        np.add.at(self.far, s, far)
+        np.add.at(self.far, e, far)
+
+        self.near[:] = 0
+        near = far * weight
+        np.add.at(self.near, s, near)
+        np.add.at(self.near, e, near)
+
+        p_far  = (self.far - self.neutral_density) * self.k_far
+        p_near = self.near * self.k_near
+
+        displacement = (p_far[pairs].mean(axis=1) * weight + p_near[pairs].mean(axis=1) * far) * (dt**2 / 2)
+        displacement = (displacement / dist)[:, None] * diff
+        np.add.at(self.position, s, displacement)
+        np.add.at(self.position, e, -displacement)
 
 
 class MeshActor(Actor):
@@ -302,12 +361,15 @@ if __name__=='__main__':
     e = 1.5e-1
     c = 1e2
     d = .02
+
+    grid_points = np.mgrid[0:10, 0:10, 0:10].reshape(3, -1).T * 0.05
     actors = [StaticActor(turtle),
               # Balloon(ball([0,0,-0.8]), e, d, c),
               # Balloon(ball([0,0.2,-0.6]), e, d, c),
               # Balloon(ball([0,0,-0.2]), e, d, c),
               # Balloon(ball([0,0,0]), e, d, c),
-              HardParticleActor(np.random.rand(1000, 3) * [2,2,5] + [[0,-0.5,-2.8]], scale=0.1)
+              # HardParticleActor(np.random.rand(1000, 3) * [2,2,5] + [[0,-0.5,-2.8]], scale=0.1)
+              FluidParticleActor(grid_points+ [[0, -0.5, -2.8]], scale=0.1)
               ]
 
     scene = Scene(actors)
