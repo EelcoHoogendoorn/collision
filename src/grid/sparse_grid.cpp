@@ -1,3 +1,37 @@
+#pragma once
+
+#include <limits>
+#include <iostream>
+#include <functional>
+#include <algorithm>
+
+#include <boost/range.hpp>
+#include <boost/range/irange.hpp>
+#include <boost/range/combine.hpp>
+#include <boost/range/algorithm.hpp>
+#include <boost/range/numeric.hpp>
+
+#include <boost/range/adaptor/indexed.hpp>
+#include <boost/range/adaptor/transformed.hpp>
+#include <boost/range/adaptor/filtered.hpp>
+#include <boost/range/adaptor/adjacent_filtered.hpp>
+//#include <boost/range/adaptors.hpp>       // somehow gives a link error?
+
+#include "typedefs.cpp"
+#include "numpy_eigen/array.cpp"
+#include "numpy_boost/ndarray.cpp"
+#include "numpy_boost/exception.cpp"
+#include "maps.cpp"
+
+
+using namespace boost;
+using namespace boost::adaptors;
+
+
+/*
+
+*/
+
 template<typename spec_t>
 class SparseGrid {
 
@@ -79,6 +113,23 @@ private:
 		add_pivot(n_points);
 
 		return pivots.resize(n_pivots);
+	}
+
+
+public:
+	//convert bucket index into cell coords
+	inline fixed_t cell_from_bucket(index_t b) const {
+		return cell_id[permutation[pivots[b]]];
+	}
+	auto indices_from_bucket(index_t b) const {
+		return (b == -1) ? irange(0, 0) : irange(pivots[b], pivots[b + 1]);
+	}
+	auto indices_from_cell(fixed_t cell) const {
+		return indices_from_bucket(bucket_from_cell[cell]);
+	}
+	auto vertices_from_cell(fixed_t cell) const {
+		return indices_from_cell(cell)
+			| transformed([&](index_t i) {return permutation[i];});
 	}
 
 };

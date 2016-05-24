@@ -22,6 +22,7 @@ public:
 public:
 	const ndarray<fixed_t>       cell_id;     // the cell coordinates a vertex resides in
 	const ndarray<index_t>       offsets;	  // determines stencil
+	const SparseGrid<spec_t>     grid;
 
 public:
 	//interface methods
@@ -35,6 +36,7 @@ public:
 		position(position.view<vector_t>()),
 		n_points(position.size()),
 		cell_id(init_cells()),
+		grid(spec, cell_id)
 	{
 	}
 	// constructor
@@ -43,6 +45,7 @@ public:
 		position(position.view<vector_t>()),
 		n_points(position.size()),
 		cell_id(init_cells()),
+		grid(spec, cell_id)
 	{
 	}
 
@@ -55,6 +58,7 @@ public:
 		position	(position.view<vector_t>()),
 		n_points	(position.size()),
 		cell_id		(init_cells()),
+		grid(spec, cell_id)
 	{
 	}
 
@@ -68,27 +72,12 @@ private:
 	}
 
 
-protected:
-	//convert bucket index into cell coords
-	inline fixed_t cell_from_bucket(index_t b) const {
-		return cell_id[permutation[pivots[b]]];
-	}
-	auto indices_from_bucket(index_t b) const {
-		return (b == -1) ? irange(0, 0) : irange(pivots[b], pivots[b + 1]);
-	}
-	auto indices_from_cell(fixed_t cell) const {
-		return indices_from_bucket(bucket_from_cell[cell]);
-	}
-	auto vertices_from_cell(fixed_t cell) const {
-		return indices_from_cell(cell)
-			| transformed([&](index_t i) {return permutation[i];});
-	}
 
 public:
 	// public traversal interface; what this class is all about
 	template <class F>
 	void for_each_vertex_in_cell(fixed_t cell, const F& body) const {
-		for (index_t v : vertices_from_cell(cell))
+		for (index_t v : grid.vertices_from_cell(cell))
 			body(v);
 	}
 
@@ -96,7 +85,7 @@ public:
 	template <class F>
 	void for_each_cell(const F& body) const {
 		for (index_t b : irange(0, n_buckets))
-			body(cell_from_bucket(b));
+			body(grid.cell_from_bucket(b));
 	}
 
 
@@ -116,7 +105,7 @@ public:
 
 		//loop over all buckets
 		for_each_cell([&](const fixed_t ci) {
-            const auto bi = vertices_from_cell(ci);
+            const auto bi = grid.vertices_from_cell(ci);
 			//interaction within bucket
 			for (index_t vi : bi)
 				for (index_t vj : bi)
@@ -124,7 +113,7 @@ public:
 						wrapper(vi, vj);
 			//loop over all neighboring buckets
 			for (index_t o : offsets) {
-				const auto bj = vertices_from_cell(ci + o);
+				const auto bj = grid.vertices_from_cell(ci + o);
 				for (const index_t vj : bj)		//loop over other guy first; he might be empty, giving early exit
 					for (const index_t vi : bi)
 						wrapper(vi, vj);
@@ -152,6 +141,18 @@ public:
         }
         return output;
 	}
+
+	// initialize the stencil of hash offsets
+	ndarray<hash_t> compute_offsets(ndarray<fixed_t, 2> stencil) const {
+        auto arr = ndarray_from_range(
+            stencil.view<cell_t>()
+                | transformed([&](cell_t c){return spec.hash_from_cell(c);})
+                | filtered([&](hash_t h){return h > 0;})
+                );
+        boost::sort(arr);
+        return arr;
+	}
+
 };
 
 
