@@ -75,7 +75,8 @@ public:
 		        cell_id.push_back(spec.hash_from_cell(c));
 		        object_id.push_back(b);
 		    }
-		return cell_id;
+		object_id = ndarray_from_range(object_id);
+		return ndarray_from_range(cell_id);
 	}
 
     // range of all cells in a box in world space; ndim compatible, and minimal branching.

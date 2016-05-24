@@ -42,6 +42,7 @@ public:
 	typedef typename spec_t::box_t			box_t;
 	typedef typename spec_t::vector_t		vector_t;
 	typedef typename spec_t::cell_t			cell_t;
+	typedef erow<index_t, 2>                pair_t;
 
 	const spec_t				 spec;
 	const ndarray<vector_t>      position;    // positions
@@ -103,7 +104,6 @@ private:
 
 
 public:
-
 	// public traversal interface; what this class is all about
 	template <class F>
 	void for_each_point_in_cell(fixed_t cell, const F& body) const {
@@ -142,16 +142,11 @@ public:
 	}
     // compute [n, 2] array of all pairs within length_scale distance
 	ndarray<index_t, 2> get_pairs() const {
-	    typedef erow<index_t, 2> pair_t;
-
 	    std::vector<pair_t> pairs;
 	    for_each_pair([&](index_t i, index_t j, real_t d2) {
 	        pairs.push_back(pair_t(i, j));
 	    });
 	    index_t n_pairs(pairs.size());
-//	    ndarray<pair_t> _pairs({n_pairs});
-//        boost::copy(pairs, _pairs.begin());
-//        ndarray<index_t, 2> output = _pairs.unview<index_t>();
         ndarray<index_t, 2> output({ n_pairs, 2});
 
         for (index_t p : irange(0, n_pairs)) {
