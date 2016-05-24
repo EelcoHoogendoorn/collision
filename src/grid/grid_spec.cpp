@@ -34,16 +34,16 @@ class GridSpec {
     */
 
 public:
+	typedef GridSpec<real_t, fixed_t, index_t, n_dim> self_t;
+
 	// expose as public
 	typedef fixed_t                         fixed_t;
 	typedef real_t                          real_t;     
 	typedef index_t                         index_t;
 
-	typedef GridSpec<real_t, fixed_t, index_t, n_dim> self_t;
-
-	typedef earray  <real_t , 2, n_dim>	box_t;
-	typedef erow    <real_t ,    n_dim>	vector_t;
-	typedef erow    <fixed_t,    n_dim>	cell_t;
+	typedef earray  <real_t , 2, n_dim>	    box_t;
+	typedef erow    <real_t ,    n_dim>	    vector_t;
+	typedef erow    <fixed_t,    n_dim>	    cell_t;
 
 	const real_t scale;    // size of a virtual voxel
 	const box_t  box;      // maximum extent of pointcloud; used to map coordinates to positive integers
@@ -106,6 +106,18 @@ public:
 	}
 	inline fixed_t hash_from_cell(cell_t cell) const {
 		return (cell * strides).sum();
+	}
+
+	// initialize the stencil of hash offsets
+	// boil this info further down to contiguous stretches?
+	ndarray<fixed_t> compute_offsets(ndarray<fixed_t, 2> stencil) const {
+        auto arr = ndarray_from_range(
+            stencil.view<cell_t>()
+                | transformed([&](cell_t c){return hash_from_cell(c);})
+                | filtered([&](fixed_t h){return h > 0;})
+                );
+        boost::sort(arr);
+        return arr;
 	}
 
 };

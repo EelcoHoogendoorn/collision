@@ -55,8 +55,9 @@ public:
 			if ((keys[entry] == key))
 				return values[entry];	// we found it; this should be the most common code path
 			if (values[entry] == -1) 
-				return -1;				// if we didnt find it yet by now, we never will
+				break;				// if we didnt find it yet by now, we never will
 		}
+		return -1;
 	}
 
 private:

@@ -15,7 +15,7 @@ boost python interface definition
 using namespace boost;
 
 typedef float32_t   real_t;         // real type of coordinate space
-typedef int64_t     fixed_t;        // representation of cell coordinates; 32 bits would likely suffice
+typedef int64_t     fixed_t;        // representation of cell coordinates; 32 bits would give only 10 bits in 3d
 typedef int32_t     index_t;        // indexing type; we never expect to have more than 4 billion of anything
 
 typedef GridSpec<real_t, fixed_t, index_t, 2> Spec2d;
@@ -25,7 +25,6 @@ typedef PointGrid<Spec2d> Grid2d;
 typedef PointGrid<Spec3d> Grid3d;
 
 //typedef TriangleMesh<float32> Mesh;
-//
 //typedef CollisionInfo<Grid3d, Mesh> Info;
 
 
@@ -50,7 +49,7 @@ BOOST_PYTHON_MODULE(Collision)
 
 
 	class_<Spec2d>("Spec2d", init<ndarray<real_t, 2>, real_t>())
-//	    .def("stencil", &Spec2d::compute_offsets)
+	    .def("stencil", &Spec2d::compute_offsets)
 		;
 	class_<Grid2d>("Grid2d", init<Spec2d, ndarray<real_t, 2>, ndarray<index_t>>())
 		.def("cells",       &Grid2d::get_cells)
@@ -62,18 +61,16 @@ BOOST_PYTHON_MODULE(Collision)
 //		.def("unit_test", &Grid2::unit_test)
 		;
 
-//	class_<Spec3d>("Spec3d", init<ndarray<float32, 2>, float32>())
-//	    .def("stencil", &Spec3d::compute_offsets)
-//		;
-//	class_<Grid3d>("Grid3d", init<Spec3d, ndarray<float32, 2>, ndarray<Grid3d::index_t>>())
-//		.add_property("cells",      &Grid3d::get_cells,       &Grid3d::set_cells)
-//		.add_property("permutation",&Grid3d::get_permutation, &Grid3d::set_permutation)
-//		.add_property("pivots",     &Grid3d::get_pivots,      &Grid3d::set_pivots)
-//		.def_readonly("n_buckets",  &Grid3d::n_buckets)
-//        .def("get_pairs", &Grid3d::get_pairs)
-//        .def("update", &Grid3d::update)
-////		.def("unit_test", &Grid3::unit_test)
-//		;
+	class_<Spec3d>("Spec3d", init<ndarray<real_t, 2>, real_t>())
+	    .def("stencil", &Spec3d::compute_offsets)
+		;
+	class_<Grid3d>("Grid3d", init<Spec3d, ndarray<real_t, 2>, ndarray<index_t>>())
+		.def("cells",       &Grid3d::get_cells)
+		.def("permutation", &Grid3d::get_permutation)
+        .def("pairs",       &Grid3d::get_pairs)
+        .def("update",      &Grid3d::update)
+//		.def("unit_test", &Grid3::unit_test)
+		;
 
 //	class_<Mesh>("Mesh", init<ndarray<float32, 2>, ndarray<float32, 2>, ndarray<int32, 2>, float32, float32>())
 //		.add_property("boxes",      &Mesh::get_boxes, &Mesh::set_boxes)

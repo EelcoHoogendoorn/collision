@@ -118,11 +118,11 @@ def test_point_performance():
     construction = time.clock() - start
 
     start = time.clock()
-    grid = PointGrid(spec, points[grid.permutation], offsets)
+    grid = PointGrid(spec, points[grid.permutation()], offsets)
     construction = time.clock() - start
 
     start = time.clock()
-    pairs = grid.get_pairs()
+    pairs = grid.pairs()
     pairing = time.clock() - start
 
     from scipy.spatial import cKDTree
@@ -152,7 +152,7 @@ def test_point_correctness():
     offsets = spec.stencil(stencil).astype(np.int32)
     grid = PointGrid(spec, points, offsets)
 
-    pairs = grid.get_pairs()
+    pairs = grid.pairs()
 
     from scipy.spatial import cKDTree
     tree = cKDTree(points)
@@ -163,5 +163,5 @@ def test_point_correctness():
     assert np.alltrue(npi.unique(tree_pairs) == npi.unique(np.sort(pairs, axis=1)))
 
 
-test_point_correctness()
+test_point_performance()
 

@@ -80,7 +80,7 @@ public:
 
 	// create a new pointgrid, using the permutation of existing pointgrid as initial guess
 	self_t update(const ndarray<real_t, 2> position) const {
-	    return self_t(spec, position, permutation, offsets);
+	    return self_t(spec, position, grid.permutation, offsets);
 	}
 	explicit PointGrid(spec_t spec, ndarray<real_t, 2> position, ndarray<index_t> permutation, ndarray<index_t> offsets) :
 		spec		(spec),
@@ -103,18 +103,6 @@ private:
 
 
 public:
-	// initialize the stencil of hash offsets
-	// boil this info further down to contiguous stretches?
-	ndarray<fixed_t> compute_offsets(ndarray<fixed_t, 2> stencil) const {
-        auto arr = ndarray_from_range(
-            stencil.view<cell_t>()
-                | transformed([&](cell_t c){return spec.hash_from_cell(c);})
-                | filtered([&](fixed_t h){return h > 0;})
-                );
-        boost::sort(arr);
-        return arr;
-	}
-
 
 	// public traversal interface; what this class is all about
 	template <class F>
