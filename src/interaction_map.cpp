@@ -128,6 +128,85 @@ public:
 };
 
 
+template<typename spec_t>
+class SparseGrid {
+
+public:
+    typedef SparseGrid<spec_t>				self_t;
+	typedef typename spec_t::index_t		index_t;
+	typedef typename spec_t::hash_t			hash_t;
+
+	const spec_t				 spec;
+
+public:
+    const ndarray<hash_t>       hashes;
+	const ndarray<index_t>       permutation; // index array mapping the entries to lexographically sorted order
+	const ndarray<index_t>       pivots;	  // boundaries between buckets of cells as viewed under permutation
+	const index_t                n_buckets;   // number of cells
+	const HashMap<hash_t, index_t, index_t> bucket_from_cell; // maps cell coordinates to bucket index
+
+    const index_t               n_hashes;
+public:
+
+	// constructor
+	explicit SparseGrid(spec_t spec, ndarray<hash_t> hashes) :
+		spec(spec),
+        hashes(hashes),
+        n_hashes(hashes.size()),
+		permutation(init_permutation()),
+		pivots(init_pivots()),
+		n_buckets(pivots.size() - 1),
+		bucket_from_cell(       // create a map to invert the cell_from_bucket function
+			boost::combine(
+				irange(0, n_buckets) | transformed([&](index_t b) {return cell_from_bucket(b);}),
+				irange(0, n_buckets)
+			)
+		)
+	{
+	}
+
+private:
+	// finds the index vector that puts the vertices in a lexographically sorted order
+	auto init_permutation() const {
+	    return init_permutation(irange(0, n_hashes));
+	}
+	template<typename range_t>
+	auto init_permutation(const range_t initial_permutation) const {
+		ndarray<index_t> _permutation({ n_hashes });
+		// init with initial order; 0 to n
+		boost::copy(initial_permutation, _permutation.begin());
+		// branching-free lex sorting ftw
+		auto _hashes = hashes.range();
+		auto lex = [&](index_t l, index_t r) {return _hashes[r] > _hashes[l];};
+        // wow, casting permutation to raw range yield factor 3 performance in sorted case
+		boost::sort(_permutation.range(), lex);
+		return _permutation;
+	}
+	//divide the sorted vertices into buckets, containing vertices in the same virtual voxel
+	auto init_pivots() const {
+		// allocate array of size n_points, becuase it plays nicely with the rest of our numpy mempool
+		// changes this into push-back into growing ndarray instead
+		ndarray<index_t> pivots({ n_hashes+1 });
+
+		index_t n_pivots = 0;		//number of pivots
+		auto add_pivot = [&](index_t p) {pivots[n_pivots++] = p;};
+
+		auto res = permutation
+			| transformed([&](auto i) {return hashes[i];})
+			| indexed(0)
+			| adjacent_filtered([](auto a, auto b) {return a.value() != b.value();})
+			| transformed([](auto i) {return i.index();});
+
+		for (index_t p : res)
+			add_pivot(p);
+		add_pivot(n_points);
+
+		return pivots.resize(n_pivots);
+	}
+
+};
+
+
 
 template<typename spec_t>
 class PointGrid {
@@ -434,36 +513,21 @@ public:
 	const ndarray<fixed_t>       cell_id;     // the cell coordinates a box resides in
 	ndarray<index_t>       object_id;   // id of box generating this grid entry
 
-    // factor this bit out into a seperate class
-	const ndarray<index_t>       permutation; // index array mapping the entries to lexographically sorted order
-	const ndarray<index_t>       pivots;	  // boundaries between buckets of cells as viewed under permutation
-	const index_t                n_buckets;   // number of cells
-	const HashMap<fixed_t, index_t, index_t> bucket_from_cell; // maps cell coordinates to bucket index
+	const SparseGrid grid;
 
 public:
 
 	// constructor
 	explicit ObjectGrid(spec_t spec, ndarray<real_t, 3> boxes) :
 		spec(spec),
-
 		boxes(boxes.view<box_t>()),
 		n_boxes(boxes.size()),
 		cell_id(init_cells()),
-
-        // the things below could be in a subclass
-		permutation(init_permutation()),
-		pivots(init_pivots()),
-		n_buckets(pivots.size() - 1),
-		bucket_from_cell(       // create a map to invert the cell_from_bucket function
-			boost::combine(
-				irange(0, n_buckets) | transformed([&](index_t b) {return cell_from_bucket(b);}),
-				irange(0, n_buckets)
-			)
-		)
+        grid(spec, cell_id)
 	{
 	}
 
-	// determine grid cells
+	// determine grid cells and corresponding object ids
 	auto init_cells() const {
 		std::vector<fixed_t> cell_id(n_boxes);
 		std::vector<index_t> object_id(n_boxes);
@@ -475,7 +539,7 @@ public:
 		return cell_id;
 	}
 
-    // range of all cells in a box in world space
+    // range of all cells in a box in world space; ndim compatible, and minimal branching.
     auto cells_from_box(const box_t& box) const {
     	const cell_t lb =  spec.cell_from_position(box.row(0)).max(cell_t(0, 0, 0));
 		const cell_t ub = (spec.cell_from_position(box.row(1)) + 1).min(spec.shape);
@@ -503,9 +567,23 @@ public:
 		};
 
 	    for (cell_t c : cells_from_box(box))
-            for (index_t v : vertices_from_cell(spec.hash_from_cell(c)))
+            for (index_t v : grid.vertices_from_cell(spec.hash_from_cell(c)))
                 if (in_box(v))
                     body(v);
 	}
+
+	// self-intersection
+	ndarray<index_t, 2> intersect() const {
+	    // for each cell in grid
+	    // return each object pair in cell
+	}
+
+	// other-intersection
+	ndarray<index_t, 2> intersect(self_t& other) const {
+	    self_t& self = *this;
+        // for each intersection of cell hashes
+        // generate pairs
+	}
+
 
 };
