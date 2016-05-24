@@ -369,8 +369,8 @@ if __name__=='__main__':
               # Balloon(ball([0,0.2,-0.6]), e, d, c),
               # Balloon(ball([0,0,-0.2]), e, d, c),
               # Balloon(ball([0,0,0]), e, d, c),
-              # HardParticleActor(np.random.rand(1000, 3) * [2,2,5] + [[0,-0.5,-2.8]], scale=0.1)
-              FluidParticleActor(grid_points+ [[0, -0.5, -1.8]], scale=0.1)
+              HardParticleActor(np.random.rand(1000, 3) * [2,2,5] + [[0,-0.5,-2.8]], scale=0.1)
+              # FluidParticleActor(grid_points+ [[0, -0.5, -1.8]], scale=0.1)
               ]
 
     scene = Scene(actors)
