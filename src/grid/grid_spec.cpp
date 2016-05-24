@@ -1,42 +1,49 @@
 #pragma once
 
 #include <limits>
+#include <iostream>
 #include <functional>
 #include <algorithm>
 
 #include <boost/range.hpp>
 #include <boost/range/irange.hpp>
+#include <boost/range/combine.hpp>
+#include <boost/range/algorithm.hpp>
+#include <boost/range/numeric.hpp>
 
+#include <boost/range/adaptor/indexed.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/adaptor/filtered.hpp>
+#include <boost/range/adaptor/adjacent_filtered.hpp>
 //#include <boost/range/adaptors.hpp>       // somehow gives a link error?
 
-#include "typedefs.cpp"
-#include "numpy_eigen/array.cpp"
-#include "numpy_boost/ndarray.cpp"
-#include "numpy_boost/exception.cpp"
+
+#include "../typedefs.cpp"
+#include "../numpy_eigen/array.cpp"
+#include "../numpy_boost/ndarray.cpp"
+#include "../numpy_boost/exception.cpp"
 
 
 using namespace boost;
 using namespace boost::adaptors;
 
 
-template<typename real_t, typename fixed_t, int NDim>
+template<typename real_t, typename fixed_t, typename index_t, int n_dim>
 class GridSpec {
     /* helper class which stores the defining properties of a grid
     */
 
 public:
-	typedef fixed_t                         fixed_t;     // expose as public
-	typedef real_t                          real_t;     // expose as public
+	// expose as public
+	typedef fixed_t                         fixed_t;
+	typedef real_t                          real_t;     
+	typedef index_t                         index_t;
 
-	typedef GridSpec<real_t, fixed_t, NDim> self_t;
-	typedef int32_t                         index_t;       // 32 bit int is a fine size type; 4 billion points isnt very likely
-	typedef int64_t                         hash_t;
+	typedef GridSpec<real_t, fixed_t, index_t, n_dim> self_t;
 
-	typedef earray  <real_t , 2, NDim>	box_t;
-	typedef erow    <real_t ,    NDim>	vector_t;
-	typedef erow    <fixed_t,    NDim>	cell_t;
+	typedef earray  <real_t , 2, n_dim>	box_t;
+	typedef erow    <real_t ,    n_dim>	vector_t;
+	typedef erow    <fixed_t,    n_dim>	cell_t;
 
 	const real_t scale;    // size of a virtual voxel
 	const box_t  box;      // maximum extent of pointcloud; used to map coordinates to positive integers
@@ -71,11 +78,11 @@ public:
 		//		boost::partial_sum(shape.cast<int>(), begin(strides), std::multiplies<int>());   // doesnt work somehow
 		cell_t strides;
 		strides(0) = 1;
-		for (auto i : irange(1, NDim))
+		for (auto i : irange(1, n_dim))
 			strides(i) = strides(i - 1) * shape(i - 1);
 		return strides;
     }
-    static auto compute_bounding_box(ndarray<vector_t> points)
+    static auto compute_bounding_box(ndarray<vector_t> points) {
 		real_t inf = std::numeric_limits<real_t>::infinity();
 		box_t box;
 		box.row(0).fill(+inf);

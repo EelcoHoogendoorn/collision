@@ -14,10 +14,11 @@
 #include <boost/range/adaptor/adjacent_filtered.hpp>
 //#include <boost/range/adaptors.hpp>       // somehow gives a link error?
 
-#include "typedefs.cpp"
-#include "numpy_eigen/array.cpp"
-#include "numpy_boost/ndarray.cpp"
-#include "numpy_boost/exception.cpp"
+#include "../typedefs.cpp"
+#include "../numpy_eigen/array.cpp"
+#include "../numpy_boost/ndarray.cpp"
+#include "../numpy_boost/exception.cpp"
+
 #include "maps.cpp"
 
 
@@ -29,23 +30,22 @@ using namespace boost::adaptors;
 
 */
 
-// no need for spec really...
-template<typename spec_t>
+template<typename key_t, typename index_t>
 class SparseGrid {
     /* this is some kind of multimap. basically just grouping some sortable thing by permutation order */
 
 public:
-	typedef typename spec_t::index_t		index_t;
-	typedef typename spec_t::key_t			key_t;
+	typedef index_t		index_t;
+	typedef key_t	    key_t;
 
 public:
-	const spec_t				 spec;
     const ndarray<key_t>         keys;
     const index_t                n_keys;
 
 	const ndarray<index_t>       permutation; // index array mapping the keys to lexographically sorted order
 	const ndarray<index_t>       pivots;	  // boundaries between buckets of keys as viewed under permutation
 	const index_t                n_buckets;   // number of unique keys
+
 	const HashMap<key_t, index_t, index_t> bucket_from_key; // maps key to bucket index
 
 	auto get_permutation()  const { return permutation; }
@@ -55,8 +55,7 @@ public:
 
 public:
 	// constructor
-	explicit SparseGrid(spec_t spec, ndarray<key_t> keys) :
-		spec(spec),
+	explicit SparseGrid(ndarray<key_t> keys) :
         keys(keys),
         n_keys(keys.size()),
 		permutation(init_permutation()),
@@ -72,8 +71,7 @@ public:
 	}
 
     // construct using permutation initial guess
-	explicit SparseGrid(spec_t spec, ndarray<key_t> keys, ndarray<index_t> permutation) :
-		spec(spec),
+	explicit SparseGrid(ndarray<key_t> keys, ndarray<index_t> permutation) :
         keys(keys),
         n_keys(keys.size()),
 		permutation(init_permutation(permutation)),
@@ -122,17 +120,13 @@ private:
 
 		for (index_t p : res)
 			add_pivot(p);
-		add_pivot(n_points);
+		add_pivot(n_keys);
 
 		return pivots.resize(n_pivots);
 	}
 
 
 public:
-	// get n-th unique key
-	inline key_t key_from_bucket(index_t b) const {
-		return keys[permutation[pivots[b]]];
-	}
 	inline auto indices_from_bucket(index_t b) const {
 		return (b == -1) ? irange(0, 0) : irange(pivots[b], pivots[b + 1]);
 	}
@@ -140,5 +134,16 @@ public:
 		return indices_from_bucket(bucket_from_key[key])
 			| transformed([&](index_t i) {return permutation[i];});
 	}
+
+	// get n-th unique key
+	inline key_t key_from_bucket(index_t b) const {
+		return keys[permutation[pivots[b]]];
+	}
+	// range over each unique key in the grid, in sorted order
+	auto unique_keys() const {
+		return irange(0, n_buckets)
+		    | transformed([&](auto b){return key_from_bucket(b);});
+	}
+
 
 };

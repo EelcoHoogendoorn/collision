@@ -14,7 +14,7 @@ using erow = Eigen::Array<T, 1, C, Eigen::RowMajor>;
 template <typename T, int R>
 using ecol = Eigen::Array<T, R, 1, Eigen::RowMajor>;
 
-template <int R, int C, typename T>
+template <typename T, int R, int C>
 using earray = Eigen::Array<T, R, C, Eigen::RowMajor>;
 
 

@@ -8,9 +8,9 @@
 #include <boost/range/difference_type.hpp>
 #include <boost/tuple/tuple.hpp>
 
-#include "typedefs.cpp"
-#include "numpy_eigen/array.cpp"
-#include "numpy_boost/ndarray.cpp"
+#include "../typedefs.cpp"
+#include "../numpy_eigen/array.cpp"
+#include "../numpy_boost/ndarray.cpp"
 
 
 template<typename key_t, typename value_t, typename index_t>
@@ -53,8 +53,9 @@ public:
 	inline value_t operator[](const key_t key) const {
         for (index_t entry : circular_view(key)) {
 			if ((keys[entry] == key))
-				return values[entry];	        // we found it; this should be the most common code path
-			if (values[entry] == -1) return -1;	// if we didnt find it yet by now, we never will
+				return values[entry];	// we found it; this should be the most common code path
+			if (values[entry] == -1) 
+				return -1;				// if we didnt find it yet by now, we never will
 		}
 	}
 
@@ -100,5 +101,10 @@ private:
 
 class SortMap {
     /* key-value map based on sorting of keys */
+
+};
+
+class StdMap {
+	/* key-value map based on std implementation */
 
 };
