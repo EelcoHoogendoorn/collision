@@ -1,7 +1,5 @@
 #pragma once
 
-#include <limits>
-#include <iostream>
 #include <functional>
 #include <algorithm>
 
@@ -9,7 +7,6 @@
 #include <boost/range/irange.hpp>
 #include <boost/range/combine.hpp>
 #include <boost/range/algorithm.hpp>
-#include <boost/range/numeric.hpp>
 
 #include <boost/range/adaptor/indexed.hpp>
 #include <boost/range/adaptor/transformed.hpp>
@@ -32,25 +29,24 @@ using namespace boost::adaptors;
 
 */
 
+// no need for spec really...
 template<typename spec_t>
 class SparseGrid {
+    /* this is some kind of multimap. basically just grouping some sortable thing by permutation order */
 
 public:
-    typedef SparseGrid<spec_t>				self_t;
 	typedef typename spec_t::index_t		index_t;
-	typedef typename spec_t::hash_t			hash_t;
-
-	const spec_t				 spec;
+	typedef typename spec_t::key_t			key_t;
 
 public:
-    const ndarray<hash_t>       hashes;
-	const ndarray<index_t>       permutation; // index array mapping the entries to lexographically sorted order
-	const ndarray<index_t>       pivots;	  // boundaries between buckets of cells as viewed under permutation
-	const index_t                n_buckets;   // number of cells
-	const HashMap<hash_t, index_t, index_t> bucket_from_cell; // maps cell coordinates to bucket index
+	const spec_t				 spec;
+    const ndarray<key_t>         keys;
+    const index_t                n_keys;
 
-    const index_t               n_hashes;
-
+	const ndarray<index_t>       permutation; // index array mapping the keys to lexographically sorted order
+	const ndarray<index_t>       pivots;	  // boundaries between buckets of keys as viewed under permutation
+	const index_t                n_buckets;   // number of unique keys
+	const HashMap<key_t, index_t, index_t> bucket_from_key; // maps key to bucket index
 
 	auto get_permutation()  const { return permutation; }
 	auto get_pivots()       const { return pivots; }
@@ -58,18 +54,34 @@ public:
 	void set_pivots         (ndarray<index_t> pivots)       {}
 
 public:
-
 	// constructor
-	explicit SparseGrid(spec_t spec, ndarray<hash_t> hashes) :
+	explicit SparseGrid(spec_t spec, ndarray<key_t> keys) :
 		spec(spec),
-        hashes(hashes),
-        n_hashes(hashes.size()),
+        keys(keys),
+        n_keys(keys.size()),
 		permutation(init_permutation()),
 		pivots(init_pivots()),
 		n_buckets(pivots.size() - 1),
-		bucket_from_cell(       // create a map to invert the cell_from_bucket function
+		bucket_from_key(       // create a map to invert the key_from_bucket function
 			boost::combine(
-				irange(0, n_buckets) | transformed([&](index_t b) {return cell_from_bucket(b);}),
+				irange(0, n_buckets) | transformed([&](index_t b) {return key_from_bucket(b);}),
+				irange(0, n_buckets)
+			)
+		)
+	{
+	}
+
+    // construct using permutation initial guess
+	explicit SparseGrid(spec_t spec, ndarray<key_t> keys, ndarray<index_t> permutation) :
+		spec(spec),
+        keys(keys),
+        n_keys(keys.size()),
+		permutation(init_permutation(permutation)),
+		pivots(init_pivots()),
+		n_buckets(pivots.size() - 1),
+		bucket_from_key(       // create a map to invert the key_from_bucket function
+			boost::combine(
+				irange(0, n_buckets) | transformed([&](index_t b) {return key_from_bucket(b);}),
 				irange(0, n_buckets)
 			)
 		)
@@ -79,31 +91,31 @@ public:
 private:
 	// finds the index vector that puts the vertices in a lexographically sorted order
 	auto init_permutation() const {
-	    return init_permutation(irange(0, n_hashes));
+	    return init_permutation(irange(0, n_keys));
 	}
 	template<typename range_t>
 	auto init_permutation(const range_t initial_permutation) const {
-		ndarray<index_t> _permutation({ n_hashes });
+		ndarray<index_t> _permutation({ n_keys });
 		// init with initial order; 0 to n
 		boost::copy(initial_permutation, _permutation.begin());
 		// branching-free lex sorting ftw
-		auto _hashes = hashes.range();
-		auto lex = [&](index_t l, index_t r) {return _hashes[r] > _hashes[l];};
+		auto _keys = keys.range();
+		auto lex = [&](index_t l, index_t r) {return _keys[r] > _keys[l];};
         // wow, casting permutation to raw range yield factor 3 performance in sorted case
 		boost::sort(_permutation.range(), lex);
 		return _permutation;
 	}
 	//divide the sorted vertices into buckets, containing vertices in the same virtual voxel
 	auto init_pivots() const {
-		// allocate array of size n_points, becuase it plays nicely with the rest of our numpy mempool
+		// allocate array of size n_keys, becuase it plays nicely with the rest of our numpy mempool
 		// changes this into push-back into growing ndarray instead
-		ndarray<index_t> pivots({ n_hashes+1 });
+		ndarray<index_t> pivots({ n_keys+1 });
 
 		index_t n_pivots = 0;		//number of pivots
 		auto add_pivot = [&](index_t p) {pivots[n_pivots++] = p;};
 
 		auto res = permutation
-			| transformed([&](auto i) {return hashes[i];})
+			| transformed([&](auto i) {return keys[i];})
 			| indexed(0)
 			| adjacent_filtered([](auto a, auto b) {return a.value() != b.value();})
 			| transformed([](auto i) {return i.index();});
@@ -117,18 +129,15 @@ private:
 
 
 public:
-	//convert bucket index into cell coords
-	inline fixed_t cell_from_bucket(index_t b) const {
-		return cell_id[permutation[pivots[b]]];
+	// get n-th unique key
+	inline key_t key_from_bucket(index_t b) const {
+		return keys[permutation[pivots[b]]];
 	}
-	auto indices_from_bucket(index_t b) const {
+	inline auto indices_from_bucket(index_t b) const {
 		return (b == -1) ? irange(0, 0) : irange(pivots[b], pivots[b + 1]);
 	}
-	auto indices_from_cell(fixed_t cell) const {
-		return indices_from_bucket(bucket_from_cell[cell]);
-	}
-	auto vertices_from_cell(fixed_t cell) const {
-		return indices_from_cell(cell)
+	inline auto indices_from_key(key_t key) const {
+		return indices_from_bucket(bucket_from_key[key])
 			| transformed([&](index_t i) {return permutation[i];});
 	}
 

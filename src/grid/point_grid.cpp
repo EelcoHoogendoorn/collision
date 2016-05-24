@@ -1,3 +1,27 @@
+#pragma once
+
+#include <functional>
+#include <algorithm>
+
+#include <boost/range.hpp>
+#include <boost/range/irange.hpp>
+#include <boost/range/algorithm.hpp>
+
+#include <boost/range/adaptor/indexed.hpp>
+#include <boost/range/adaptor/transformed.hpp>
+#include <boost/range/adaptor/filtered.hpp>
+//#include <boost/range/adaptors.hpp>       // somehow gives a link error?
+
+#include "typedefs.cpp"
+#include "numpy_eigen/array.cpp"
+#include "numpy_boost/ndarray.cpp"
+#include "numpy_boost/exception.cpp"
+
+
+using namespace boost;
+using namespace boost::adaptors;
+
+
 template<typename spec_t>
 class PointGrid {
 	/*
@@ -20,9 +44,9 @@ public:
 	const index_t                n_points;    // number of points
 
 public:
-	const ndarray<fixed_t>       cell_id;     // the cell coordinates a vertex resides in
+	const ndarray<fixed_t>       cell_id;     // the hash of a cell a point resides in
 	const ndarray<index_t>       offsets;	  // determines stencil
-	const SparseGrid<spec_t>     grid;
+	const SparseGrid<spec_t>     grid;        // defines buckets
 
 public:
 	//interface methods
@@ -32,20 +56,21 @@ public:
 
 	// constructor
 	explicit PointGrid(spec_t spec, ndarray<real_t, 2> position) :
-		spec(spec),
-		position(position.view<vector_t>()),
-		n_points(position.size()),
-		cell_id(init_cells()),
-		grid(spec, cell_id)
+		spec        (spec),
+		position    (position.view<vector_t>()),
+		n_points    (position.size()),
+		cell_id     (init_cells()),
+		grid        (spec, cell_id)
 	{
 	}
-	// constructor
+	// constructor with nonzero stencil, for self intersection
 	explicit PointGrid(spec_t spec, ndarray<real_t, 2> position, ndarray<index_t> offsets) :
-		spec(spec),
-		position(position.view<vector_t>()),
-		n_points(position.size()),
-		cell_id(init_cells()),
-		grid(spec, cell_id)
+		spec        (spec),
+		position    (position.view<vector_t>()),
+		n_points    (position.size()),
+		cell_id     (init_cells()),
+		offsets     (offsets),
+		grid        (spec, cell_id)
 	{
 	}
 
@@ -58,7 +83,8 @@ public:
 		position	(position.view<vector_t>()),
 		n_points	(position.size()),
 		cell_id		(init_cells()),
-		grid(spec, cell_id)
+		offsets     (offsets),
+		grid        (spec, cell_id, permutation)
 	{
 	}
 
@@ -72,61 +98,71 @@ private:
 	}
 
 
-
 public:
+	// initialize the stencil of hash offsets
+	ndarray<hash_t> compute_offsets(ndarray<fixed_t, 2> stencil) const {
+        auto arr = ndarray_from_range(
+            stencil.view<cell_t>()
+                | transformed([&](cell_t c){return spec.hash_from_cell(c);})
+                | filtered([&](hash_t h){return h > 0;})
+                );
+        boost::sort(arr);
+        return arr;
+	}
+
+
 	// public traversal interface; what this class is all about
 	template <class F>
-	void for_each_vertex_in_cell(fixed_t cell, const F& body) const {
-		for (index_t v : grid.vertices_from_cell(cell))
-			body(v);
+	void for_each_point_in_cell(fixed_t cell, const F& body) const {
+		for (index_t p : grid.objects_from_key(cell))
+			body(p);
 	}
 
 	//loop over each occupied cell in the grid
 	template <class F>
 	void for_each_cell(const F& body) const {
 		for (index_t b : irange(0, n_buckets))
-			body(grid.cell_from_bucket(b));
+			body(grid.key_from_bucket(b));
 	}
 
 
-	//symmetric iteration over all vertex pairs, summing reaction forces
+	// symmetric iteration over all point pairs
 	template <class F>
-	void for_each_vertex_pair(const F& body) const
+	void for_each_pair(const F& body) const
 	{
 		const real_t ls2 = spec.scale*spec.scale;
 
-		//this function wraps sign conventions regarding relative position and force
-		const auto wrapper = [&](const index_t vi, const index_t vj){
-			const vector_t rp = position[vi] - position[vj];
+		const auto wrapper = [&](const index_t i, const index_t j){
+			const vector_t rp = position[i] - position[j];
 			const real_t d2 = (rp*rp).sum();
 			if (d2 > ls2) return;
-			body(vi, vj, d2);  // store index pair
+			body(i, j, d2);
 		};
 
 		//loop over all buckets
 		for_each_cell([&](const fixed_t ci) {
-            const auto bi = grid.vertices_from_cell(ci);
+            const auto bi = grid.objects_from_key(ci);
 			//interaction within bucket
-			for (index_t vi : bi)
-				for (index_t vj : bi)
-					if (vi==vj) break; else
-						wrapper(vi, vj);
+			for (index_t pi : bi)
+				for (index_t pj : bi)
+					if (pi==pj) break; else
+						wrapper(pi, pj);
 			//loop over all neighboring buckets
 			for (index_t o : offsets) {
-				const auto bj = grid.vertices_from_cell(ci + o);
-				for (const index_t vj : bj)		//loop over other guy first; he might be empty, giving early exit
-					for (const index_t vi : bi)
-						wrapper(vi, vj);
+				const auto bj = grid.objects_from_key(ci + o);
+				for (const index_t pj : bj)		//loop over other guy first; he might be empty, giving early exit
+					for (const index_t pi : bi)
+						wrapper(pi, pj);
 			}
 		});
 	}
-    // compute [n, 2] array of all paris within length_scale distance
+    // compute [n, 2] array of all pairs within length_scale distance
 	ndarray<index_t, 2> get_pairs() const
 	{
-	    typedef Eigen::Array<index_t, 1, 2> pair_t;
+	    typedef erow<index_t, 2> pair_t;
 
 	    std::vector<pair_t> pairs;
-	    for_each_vertex_pair([&](index_t i, index_t j, real_t d2) {
+	    for_each_pair([&](index_t i, index_t j, real_t d2) {
 	        pairs.push_back(pair_t(i, j));
 	    });
 	    index_t n_pairs(pairs.size());
@@ -142,17 +178,15 @@ public:
         return output;
 	}
 
-	// initialize the stencil of hash offsets
-	ndarray<hash_t> compute_offsets(ndarray<fixed_t, 2> stencil) const {
-        auto arr = ndarray_from_range(
-            stencil.view<cell_t>()
-                | transformed([&](cell_t c){return spec.hash_from_cell(c);})
-                | filtered([&](hash_t h){return h > 0;})
-                );
-        boost::sort(arr);
-        return arr;
+	// self intersection
+	auto intersect() const {
 	}
 
+	auto intersect(const PointGrid& other) const {
+	}
+
+	auto intersect(const ObjectGrid& other) const {
+	}
 };
 
 

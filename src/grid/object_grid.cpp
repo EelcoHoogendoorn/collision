@@ -20,6 +20,7 @@ public:
 	const index_t                n_boxes;    // number of boxes
 
 public:
+    // allocate as single 2xn array?
 	const ndarray<fixed_t>       cell_id;     // the cell coordinates a box resides in
 	ndarray<index_t>       object_id;   // id of box generating this grid entry
 
@@ -55,15 +56,11 @@ public:
 		const cell_t ub = (spec.cell_from_position(box.row(1)) + 1).min(spec.shape);
 
         const cell_t shape = ub - lb;
-
-		cell_t strides;
-		strides(0) = 1;
-		for (auto i : irange(1, NDim))
-			strides(i) = strides(i - 1) * shape(i - 1);
-        index_t size = strides(NDim - 1) * shape(NDim - 1);
+        const cell_t strides = spec.compute_strides(shape);
+        const index_t size = strides(NDim - 1) * shape(NDim - 1);
 
 		return irange(0, size)
-		    | transformed([&](index_t h){return lb + (h % strides);});
+		    | transformed([&](auto h){return lb + (h % strides);});
     }
 
 
@@ -77,9 +74,9 @@ public:
 		};
 
 	    for (cell_t c : cells_from_box(box))
-            for (index_t v : grid.vertices_from_cell(spec.hash_from_cell(c)))
-                if (in_box(v))
-                    body(v);
+            for (index_t p : grid.objects_from_key(spec.hash_from_cell(c)))
+                if (in_box(p))
+                    body(p);
 	}
 
 	// self-intersection

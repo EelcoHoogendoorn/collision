@@ -1,5 +1,6 @@
 #pragma once
 
+#include <limits>
 #include <functional>
 #include <algorithm>
 
@@ -47,22 +48,13 @@ public:
 		box		(init_box(position)),
 		shape	(init_shape()),
 		strides	(init_strides())
-//		stencil	(init_stencil(stencil))
 	{
 	}
 
 private:
 	//determine bounding box from point cloud positions
 	auto init_box(ndarray<real_t, 2> position) const {
-		real_t inf = std::numeric_limits<real_t>::infinity();
-		box_t box;
-		box.row(0).fill(+inf);
-		box.row(1).fill(-inf);
-		for (vector_t p : position.view<vector_t>()) {
-			box.row(0) = box.row(0).min(p);
-			box.row(1) = box.row(1).max(p);
-		}
-		return box;
+	    return compute_bounding_box(position.view<vector_t>());
 	}
 	// integer shape of the domain
 	cell_t init_shape() const {      // interestingly, using auto as return type fails spectacularly
@@ -70,15 +62,31 @@ private:
 	}
 	// find strides for efficient lexsort
 	auto init_strides() const {
+	    return compute_strides(shape);
+	}
+
+
+public:
+    static auto compute_strides(const cell_t shape) {
 		//		boost::partial_sum(shape.cast<int>(), begin(strides), std::multiplies<int>());   // doesnt work somehow
 		cell_t strides;
 		strides(0) = 1;
 		for (auto i : irange(1, NDim))
 			strides(i) = strides(i - 1) * shape(i - 1);
 		return strides;
+    }
+    static auto compute_bounding_box(ndarray<vector_t> points)
+		real_t inf = std::numeric_limits<real_t>::infinity();
+		box_t box;
+		box.row(0).fill(+inf);
+		box.row(1).fill(-inf);
+		for (vector_t p : points) {
+			box.row(0) = box.row(0).min(p);
+			box.row(1) = box.row(1).max(p);
+		}
+		return box;
 	}
 
-public:
 	//map a global coord into the grid local coords
 	inline vector_t transform(const vector_t& v) const {
 		return (v - box.row(0)) / scale;
