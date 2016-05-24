@@ -6,6 +6,9 @@
 typedef float float32;
 typedef double float64;
 
+typedef float float32_t;
+typedef double float64_t;
+
 typedef int8_t int8;
 typedef uint8_t uint8;
 

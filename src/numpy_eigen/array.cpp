@@ -8,11 +8,14 @@ defines vector types
 #include <boost/range.hpp>
 
 
-//template <typename T, int C>
-//using RowArray = Eigen::Array<T, 1, C>;
+template <typename T, int C>
+using erow = Eigen::Array<T, 1, C, RowMajor>;
 
-//template <int R, int C, typename T>
-//using Array = Eigen::Array<T, R, C>;
+template <typename T, int R>
+using ecol = Eigen::Array<T, R, 1, RowMajor>;
+
+template <int R, int C, typename T>
+using earray = Eigen::Array<T, R, C, RowMajor>;
 
 
 
