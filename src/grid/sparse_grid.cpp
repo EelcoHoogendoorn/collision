@@ -13,16 +13,16 @@ class SparseGrid {
     */
 
 public:
-	typedef key_t	    key_t;
-	typedef index_t		index_t;
+	typedef key_t	            key_t;
+	typedef index_t		        index_t;
 
 public:
-    const ndarray<key_t>         keys;
-    const index_t                n_keys;
+    const ndarray<key_t>        keys;
+    const index_t               n_keys;
 
-	const ndarray<index_t>       permutation; // index array mapping the keys to lexographically sorted order
-	const ndarray<index_t>       pivots;	  // boundaries between buckets of keys as viewed under permutation
-	const index_t                n_groups;    // number of unique keys
+	const ndarray<index_t>      permutation; // index array mapping the keys to lexographically sorted order
+	const ndarray<index_t>      pivots;	  // boundaries between buckets of keys as viewed under permutation
+	const index_t               n_groups;    // number of unique keys
 
 	const HashMap<key_t, index_t, index_t> group_from_key; // maps key to group index
 
@@ -70,9 +70,7 @@ private:
 	template<typename range_t>
 	auto init_permutation(const range_t initial_permutation) const {
 		ndarray<index_t> _permutation({ n_keys });
-		// init with initial order; 0 to n
 		boost::copy(initial_permutation, _permutation.begin());
-		// branching-free lex sorting ftw
 		auto _keys = keys.range();
 		auto lex = [&](index_t l, index_t r) {return _keys[r] > _keys[l];};
         // wow, casting permutation to raw range yield factor 3 performance in sorted case
@@ -93,6 +91,8 @@ private:
 			| indexed(0)
 			| adjacent_filtered([](auto a, auto b) {return a.value() != b.value();})
 			| transformed([](auto i) {return i.index();});
+
+//        auto total = join(res, {n_keys})
 
 		for (index_t p : res)
 			add_pivot(p);
