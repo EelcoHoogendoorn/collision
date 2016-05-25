@@ -1,16 +1,7 @@
 
 #pragma once
 
-#include <functional>
-#include <array>
-
-#include <boost/range/irange.hpp>
-#include <boost/range/difference_type.hpp>
-#include <boost/tuple/tuple.hpp>
-
-#include "../typedefs.cpp"
-#include "../numpy_eigen/array.cpp"
-#include "../numpy_boost/ndarray.cpp"
+#include "stdafx.h"
 
 
 template<typename key_t, typename value_t, typename index_t>

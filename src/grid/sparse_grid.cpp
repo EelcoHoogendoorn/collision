@@ -1,34 +1,8 @@
 #pragma once
 
-#include <functional>
-#include <algorithm>
-
-#include <boost/range.hpp>
-#include <boost/range/irange.hpp>
-#include <boost/range/combine.hpp>
-#include <boost/range/algorithm.hpp>
-
-#include <boost/range/adaptor/indexed.hpp>
-#include <boost/range/adaptor/transformed.hpp>
-#include <boost/range/adaptor/filtered.hpp>
-#include <boost/range/adaptor/adjacent_filtered.hpp>
-//#include <boost/range/adaptors.hpp>       // somehow gives a link error?
-
-#include "../typedefs.cpp"
-#include "../numpy_eigen/array.cpp"
-#include "../numpy_boost/ndarray.cpp"
-#include "../numpy_boost/exception.cpp"
-
+#include "stdafx.h"
 #include "maps.cpp"
 
-
-using namespace boost;
-using namespace boost::adaptors;
-
-
-/*
-
-*/
 
 template<typename key_t, typename index_t>
 class SparseGrid {
@@ -39,8 +13,8 @@ class SparseGrid {
     */
 
 public:
-	typedef index_t		index_t;
 	typedef key_t	    key_t;
+	typedef index_t		index_t;
 
 public:
     const ndarray<key_t>         keys;
