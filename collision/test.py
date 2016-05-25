@@ -142,10 +142,11 @@ def test_point_correctness():
     import itertools
     stencil = [-1, 0, 1]
     ndim = 3
-    n = 200
+    n = 2000
     stencil = itertools.product(*[stencil]*ndim)
     stencil = np.array(list(stencil)).astype(np.int32)
-    points = np.random.rand(n, ndim).astype(np.float32)
+
+    points = (np.random.rand(n, ndim) * [1, 2, 3]).astype(np.float32)
     scale = 0.1
 
     spec = GridSpec(points, float(scale))

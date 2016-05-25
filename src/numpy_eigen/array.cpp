@@ -55,5 +55,3 @@ namespace boost {
 		typedef _Scalar* type;
 	};
 } // boost
-
-

@@ -5,16 +5,11 @@ add eigen::map to numpy funcs as well?
 use this for inspiration?
 https://github.com/julienr/boost_numpy_eigen
 
-
 further optimize pair generation
 
 another speedup possibility; map triangle bbs to pointgrid; then intersect occupied cells before further processing
-add objectgrid besides pointgrid?
-would be nice if we can map triangles to objectgrid; derived class of pointgrid
 
 improve raytracing of spheres
-
-add simple fluid actor
 
 add implicit integration
 
@@ -22,3 +17,10 @@ current hash map may degrade performance for adversarial grid shapes.
 perhaps a binary-search-sorted map would be an improvement
 
 fix bug in grid.update; currently causes crash
+
+
+add example of hierarchical use of grid classes
+
+release GIL where appropriate; perhaps reduce internal reliance on ndarrays
+
+implement mesh chunking

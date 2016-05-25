@@ -9,8 +9,9 @@
 template<typename spec_t>
 class ObjectGrid {
     /*
-    extend pointgrid with object labels
-    every box generates a set of cell-ids
+    abstract base class
+    map extended objects, such as bounding boxes, to a sparse grid
+    the defining distinction with the PointGrid class is that every object may occupy multiple cells
     */
 public:
     typedef ObjectGrid<spec_t>				self_t;
@@ -45,6 +46,8 @@ public:
 	ndarray<index_t, 2> intersect(self_t& other) const {
 	    self_t& self = *this;
 	    // assert that specs are identical
+	    if ((self.box != other.box).any())
+	        throw python_exception('Grids to be intersected do not have identical specifications')
         // for each intersection of cell hashes
         // generate pairs
         // filter duplicates
