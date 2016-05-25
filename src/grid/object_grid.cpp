@@ -65,6 +65,7 @@ public:
 	// other-intersection
 	ndarray<index_t, 2> intersect(self_t& other) const {
 	    self_t& self = *this;
+	    // assert that specs are identical
         // for each intersection of cell hashes
         // generate pairs
         // filter duplicates
