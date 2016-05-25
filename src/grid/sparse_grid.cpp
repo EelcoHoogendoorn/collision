@@ -79,11 +79,12 @@ private:
 	}
 	//divide the sorted keys into groups, containing keys of identical value
 	ndarray<index_t> init_pivots() const {
+		auto _keys = keys.range();
 		auto start = permutation
-			| transformed([&](auto i) {return keys[i];})
+			| transformed(      [&](auto i)         {return _keys[i];})
 			| indexed(0)
-			| adjacent_filtered([](auto a, auto b) {return a.value() != b.value();})
-			| transformed([](auto i) {return (index_t)i.index();});
+			| adjacent_filtered([](auto a, auto b)  {return a.value() != b.value();})
+			| transformed(      [](auto i)          {return (index_t)i.index();});
 		std::vector<index_t> cap = {n_keys};
         return ndarray_from_range(boost::join(start, cap));
 	}
