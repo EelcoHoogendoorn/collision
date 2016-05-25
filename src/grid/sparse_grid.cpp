@@ -32,7 +32,11 @@ using namespace boost::adaptors;
 
 template<typename key_t, typename index_t>
 class SparseGrid {
-    /* this is some kind of multimap. basically just grouping some sortable thing by permutation order */
+    /*
+    this class groups a set of keys using an indirect sort
+    it allows for querying of unique keys,
+    and getting all permutation indices for a given key
+    */
 
 public:
 	typedef index_t		index_t;
@@ -44,27 +48,25 @@ public:
 
 	const ndarray<index_t>       permutation; // index array mapping the keys to lexographically sorted order
 	const ndarray<index_t>       pivots;	  // boundaries between buckets of keys as viewed under permutation
-	const index_t                n_buckets;   // number of unique keys
+	const index_t                n_groups;    // number of unique keys
 
-	const HashMap<key_t, index_t, index_t> bucket_from_key; // maps key to bucket index
+	const HashMap<key_t, index_t, index_t> group_from_key; // maps key to group index
 
 	auto get_permutation()  const { return permutation; }
 	auto get_pivots()       const { return pivots; }
-	void set_permutation    (ndarray<index_t> permutation)  {}
-	void set_pivots         (ndarray<index_t> pivots)       {}
 
 public:
 	// constructor
 	explicit SparseGrid(ndarray<key_t> keys) :
-        keys(keys),
-        n_keys(keys.size()),
-		permutation(init_permutation()),
-		pivots(init_pivots()),
-		n_buckets(pivots.size() - 1),
-		bucket_from_key(       // create a map to invert the key_from_bucket function
+        keys        (keys),
+        n_keys      (keys.size()),
+		permutation (init_permutation()),
+		pivots      (init_pivots()),
+		n_groups    (pivots.size() - 1),
+		group_from_key(       // create a map to invert the key_from_group function
 			boost::combine(
-				irange(0, n_buckets) | transformed([&](index_t b) {return key_from_bucket(b);}),
-				irange(0, n_buckets)
+				unique_keys(),
+				irange(0, n_groups)
 			)
 		)
 	{
@@ -72,15 +74,15 @@ public:
 
     // construct using permutation initial guess
 	explicit SparseGrid(ndarray<key_t> keys, ndarray<index_t> permutation) :
-        keys(keys),
-        n_keys(keys.size()),
-		permutation(init_permutation(permutation)),
-		pivots(init_pivots()),
-		n_buckets(pivots.size() - 1),
-		bucket_from_key(       // create a map to invert the key_from_bucket function
+        keys        (keys),
+        n_keys      (keys.size()),
+		permutation (init_permutation(permutation)),
+		pivots      (init_pivots()),
+		n_groups    (pivots.size() - 1),
+		group_from_key(       // create a map to invert the key_from_group function
 			boost::combine(
-				irange(0, n_buckets) | transformed([&](index_t b) {return key_from_bucket(b);}),
-				irange(0, n_buckets)
+				unique_keys(),
+				irange(0, n_groups)
 			)
 		)
 	{
@@ -126,24 +128,23 @@ private:
 	}
 
 
-public:
-	inline auto indices_from_bucket(index_t b) const {
-		return (b == -1) ? irange(0, 0) : irange(pivots[b], pivots[b + 1]);
+	inline auto indices_from_group(index_t g) const {
+		return (g == -1) ? irange(0, 0) : irange(pivots[g], pivots[g + 1]);
 	}
-	inline auto indices_from_key(key_t key) const {
-		return indices_from_bucket(bucket_from_key[key])
-			| transformed([&](index_t i) {return permutation[i];});
-	}
-
 	// get n-th unique key
-	inline key_t key_from_bucket(index_t b) const {
-		return keys[permutation[pivots[b]]];
+	inline key_t key_from_group(index_t g) const {
+		return keys[permutation[pivots[g]]];
 	}
+public:
 	// range over each unique key in the grid, in sorted order
 	auto unique_keys() const {
-		return irange(0, n_buckets)
-		    | transformed([&](auto b){return key_from_bucket(b);});
+		return irange(0, n_groups)
+		    | transformed([&](auto g){return key_from_group(g);});
 	}
-
+    // return a range of the permutation indices within a key-group
+	inline auto indices_from_key(key_t key) const {
+		return indices_from_group(group_from_key[key])
+			| transformed([&](index_t i) {return permutation[i];});
+	}
 
 };

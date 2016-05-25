@@ -111,7 +111,8 @@ public:
 	// self-intersection
 	ndarray<index_t, 2> intersect() const {
 	    // for each cell in grid
-	    // return each object pair in cell
+	    // generate each object pair in cell
+        // filter duplicates
 	}
 
 	// other-intersection
@@ -119,6 +120,7 @@ public:
 	    self_t& self = *this;
         // for each intersection of cell hashes
         // generate pairs
+        // filter duplicates
 	}
 
 
