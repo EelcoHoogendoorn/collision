@@ -28,13 +28,13 @@ using namespace boost::adaptors;
 
 
 template<typename spec_t>
-class BoxGrid {
+class ObjectGrid {
     /*
     extend pointgrid with object labels
     every box generates a set of cell-ids
     */
 public:
-    typedef BoxGrid<spec_t>				self_t;
+    typedef ObjectGrid<spec_t>				self_t;
     typedef typename spec_t::real_t         real_t;
 	typedef typename spec_t::index_t		index_t;
 	typedef typename spec_t::fixed_t		fixed_t;
@@ -43,18 +43,42 @@ public:
 	typedef typename spec_t::vector_t		vector_t;
 	typedef typename spec_t::cell_t			cell_t;
 
-	const spec_t				 spec;
-    const ndarray<box_t>         boxes;
-	const index_t                n_boxes;    // number of boxes
+	const spec_t				            spec;
 
 public:
     // allocate as single 2xn array?
-	const ndarray<fixed_t>       cell_id;     // the cell coordinates a box resides in
-	ndarray<index_t>       object_id;   // id of box generating this grid entry
+	const ndarray<fixed_t>                  cell_id;     // the cell coordinates a box resides in
+	ndarray<index_t>                        object_id;   // id of box generating this grid entry
 
-	const SparseGrid grid;
+	const SparseGrid                        grid;
 
 public:
+
+
+	// self-intersection
+	ndarray<index_t, 2> intersect() const {
+	    // for each cell in grid
+	    // generate each object pair in cell
+        // filter duplicates
+	}
+
+	// other-intersection
+	ndarray<index_t, 2> intersect(self_t& other) const {
+	    self_t& self = *this;
+        // for each intersection of cell hashes
+        // generate pairs
+        // filter duplicates
+	}
+
+
+};
+
+
+template<typename spec_t>
+class BoxGrid : public ObjectGrid<spec_t> {
+
+    const ndarray<box_t>                    boxes;
+	const index_t                           n_boxes;    // number of boxes
 
 	// constructor
 	explicit BoxGrid(spec_t spec, ndarray<real_t, 3> boxes) :
@@ -107,21 +131,4 @@ public:
                 if (in_box(p))
                     body(p);
 	}
-
-	// self-intersection
-	ndarray<index_t, 2> intersect() const {
-	    // for each cell in grid
-	    // generate each object pair in cell
-        // filter duplicates
-	}
-
-	// other-intersection
-	ndarray<index_t, 2> intersect(self_t& other) const {
-	    self_t& self = *this;
-        // for each intersection of cell hashes
-        // generate pairs
-        // filter duplicates
-	}
-
-
 };
