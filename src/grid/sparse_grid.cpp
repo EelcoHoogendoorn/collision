@@ -63,7 +63,7 @@ public:
 	}
 
 private:
-	// finds the index vector that puts the vertices in a lexographically sorted order
+	// find the permutation which puts the keys in sorted order
 	auto init_permutation() const {
 	    return init_permutation(irange(0, n_keys));
 	}
@@ -77,34 +77,17 @@ private:
 		boost::sort(_permutation.range(), lex);
 		return _permutation;
 	}
-	//divide the sorted vertices into buckets, containing vertices in the same virtual voxel
-	auto init_pivots() const {
-		// allocate array of size n_keys, becuase it plays nicely with the rest of our numpy mempool
-		// changes this into push-back into growing ndarray instead
-		ndarray<index_t> pivots({ n_keys+1 });
-
-		index_t n_pivots = 0;		//number of pivots
-		auto add_pivot = [&](index_t p) {pivots[n_pivots++] = p;};
-
-		auto res = permutation
+	//divide the sorted keys into groups, containing keys of identical value
+	ndarray<index_t> init_pivots() const {
+		auto start = permutation
 			| transformed([&](auto i) {return keys[i];})
 			| indexed(0)
 			| adjacent_filtered([](auto a, auto b) {return a.value() != b.value();})
-			| transformed([](auto i) {return i.index();});
-
-//        auto total = join(res, {n_keys})
-
-		for (index_t p : res)
-			add_pivot(p);
-		add_pivot(n_keys);
-
-		return pivots.resize(n_pivots);
+			| transformed([](auto i) {return (index_t)i.index();});
+		std::vector<index_t> cap = {n_keys};
+        return ndarray_from_range(boost::join(start, cap));
 	}
 
-
-	inline auto indices_from_group(index_t g) const {
-		return (g == -1) ? irange(0, 0) : irange(pivots[g], pivots[g + 1]);
-	}
 	// get n-th unique key
 	inline key_t key_from_group(index_t g) const {
 		return keys[permutation[pivots[g]]];
@@ -117,8 +100,9 @@ public:
 	}
     // return a range of the permutation indices within a key-group
 	inline auto indices_from_key(key_t key) const {
-		return indices_from_group(group_from_key[key])
-			| transformed([&](index_t i) {return permutation[i];});
+	    const index_t g = group_from_key[key];
+	    return  ((g == -1) ? irange(0, 0) : irange(pivots[g], pivots[g + 1]))
+		            | transformed([&](index_t i) {return permutation[i];});
 	}
 
 };

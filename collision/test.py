@@ -106,7 +106,7 @@ def test_point_performance():
     stencil = itertools.product(*[stencil]*ndim)
     stencil = np.array(list(stencil)).astype(np.int32)
     print (stencil.strides)
-    points = np.random.rand(20000, ndim).astype(np.float32)
+    points = np.random.rand(2000, ndim).astype(np.float32)
     scale = 0.1
 
     spec = GridSpec(points, float(scale))
@@ -163,5 +163,5 @@ def test_point_correctness():
     assert np.alltrue(npi.unique(tree_pairs) == npi.unique(np.sort(pairs, axis=1)))
 
 
-test_point_performance()
+test_point_correctness()
 
