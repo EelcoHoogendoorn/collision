@@ -5,6 +5,8 @@ add eigen::map to numpy funcs as well?
 use this for inspiration?
 https://github.com/julienr/boost_numpy_eigen
 
+make ndarray subclass of numpy::boost
+
 further optimize pair generation
 
 another speedup possibility; map triangle bbs to pointgrid; then intersect occupied cells before further processing

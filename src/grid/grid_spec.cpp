@@ -83,6 +83,12 @@ public:
 		return (cell * strides).sum();
 	}
 
+	inline bool operator==(const self_t& l, const self_t& r) {
+	    return (l.scale == r.scale) &
+	        (l.box.row(0) == r.box.row(0)).all() &
+	        (l.strides ==  r.strides).all()
+	}
+
 	// initialize the stencil of hash offsets
 	// boil this info further down to contiguous stretches?
 	ndarray<fixed_t> compute_offsets(ndarray<fixed_t, 2> stencil) const {

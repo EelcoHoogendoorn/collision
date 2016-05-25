@@ -6,7 +6,8 @@ boost python interface definition
 //#define BOOST_DISABLE_ASSERTS
 
 #include "typedefs.cpp"
-#include "numpy_boost/exception.cpp"
+#include "exception.cpp"
+
 #include "grid/grid_spec.cpp"
 #include "grid/point_grid.cpp"
 //#include "triangle_mesh.cpp"
