@@ -33,7 +33,10 @@ typedef PointGrid<Spec3d> Grid3d;
 using namespace boost::python;
 BOOST_PYTHON_MODULE(Collision)
 {
-	//initialize numpy support
+    // init GIL control
+    PyEval_InitThreads();
+
+	// initialize numpy support
 	init_numpy();
 	
 	//register array types employed; needed to avoid runtime error

@@ -83,10 +83,11 @@ public:
 		return (cell * strides).sum();
 	}
 
-	inline bool operator==(const self_t& l, const self_t& r) {
+	inline bool operator==(const self_t& r) {
+	    const self_t& l = *this;
 	    return (l.scale == r.scale) &
 	        (l.box.row(0) == r.box.row(0)).all() &
-	        (l.strides ==  r.strides).all()
+	        (l.strides ==  r.strides).all();
 	}
 
 	// initialize the stencil of hash offsets

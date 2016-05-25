@@ -100,9 +100,16 @@ public:
 		    | transformed([&](auto g){return key_from_group(g);});
 	}
     // return a range of the permutation indices within a key-group
-	inline auto indices_from_key(key_t key) const {
+	inline auto indices_from_key(const key_t key) const {
 	    const index_t g = group_from_key[key];
 	    return  ((g == -1) ? irange(0, 0) : irange(pivots[g], pivots[g + 1]))
+		            | transformed([&](index_t i) {return permutation[i];});
+	}
+
+	// extra branch isnt required if the key is known to be valid
+	inline auto indices_from_existing_key(const key_t key) const {
+	    const index_t g = group_from_key[key];
+	    return irange(pivots[g], pivots[g + 1])
 		            | transformed([&](index_t i) {return permutation[i];});
 	}
 

@@ -4,6 +4,7 @@
 
 #include "grid_spec.cpp"
 #include "sparse_grid.cpp"
+#include "point_grid.cpp"
 
 
 template<typename spec_t>
@@ -15,6 +16,7 @@ class ObjectGrid {
     */
 public:
     typedef ObjectGrid<spec_t>				self_t;
+
     typedef typename spec_t::real_t         real_t;
 	typedef typename spec_t::index_t		index_t;
 	typedef typename spec_t::fixed_t		fixed_t;
@@ -70,9 +72,9 @@ public:
         return unique_pairs(pairs);
 	}
 
-	// other-intersection
-	ndarray<index_t, 2> intersect(self_t& other) const {
-	    self_t& self = *this;
+	// other-intersection, where other is an object-grid
+	ndarray<index_t, 2> intersect(const self_t& other) const {
+	    const self_t& self = *this;
 
 	    if (self.spec == other.spec)
 	        throw python_exception('Grids to be intersected do not have identical specifications')
@@ -97,5 +99,22 @@ public:
         return unique_pairs(pairs);
 	}
 
+	// other-intersection, where other is a pointgrid
+	std::vector<fixed_t> intersect_base(const PointGrid<spec>& other) const {
+	    const self_t& self = *this;
+
+	    if (self.spec == other.spec)
+	        throw python_exception('Grids to be intersected do not have identical specifications')
+
+        // for each intersection of cell hashes
+	    std::vector<fixed_t> intersection;
+        boost::range::set_intersection(
+            self.cell_id.range(),
+            other.cell_id.range(),
+            std::back_inserter(intersection)
+        );
+
+        return intersection;
+	}
 
 };
