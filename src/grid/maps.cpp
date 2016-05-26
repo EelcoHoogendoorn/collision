@@ -100,3 +100,11 @@ class StdMap {
 	/* key-value map based on std implementation */
 
 };
+
+class DenseMap {
+    /*
+    allocate ndarray<index_t>(prod(shape)), and write hashes directly to that
+    more cache friendly than hasing based map, and for a fluid-in-square-box type simulation,
+    more memory efficient too
+    */
+};

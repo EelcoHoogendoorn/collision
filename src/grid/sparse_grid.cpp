@@ -10,6 +10,8 @@ class SparseGrid {
     this class groups a set of keys using an indirect sort
     it allows for querying of unique keys,
     and getting all permutation indices for a given key
+
+    DenseGrid class would have ndarray instead of HashMap to look up buckets
     */
 
 public:

@@ -7,6 +7,8 @@ https://github.com/julienr/boost_numpy_eigen
 
 make ndarray subclass of numpy::boost
 
+think about class relations; composition vs inheritance. how much code can be shared between pointgrid and objectgrid?
+
 further optimize pair generation
 
 another speedup possibility; map triangle bbs to pointgrid; then intersect occupied cells before further processing

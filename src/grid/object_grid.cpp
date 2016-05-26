@@ -38,8 +38,11 @@ public:
 public:
 
     // given a cell hash key, return a range of the object indices located there
-    auto objects_from_key(fixed_t key) const {
+    auto objects_from_key(const fixed_t key) const {
         return grid.indices_from_key | transformed([&](index_t i){return object_id[i];})
+    }
+    auto objects_from_existing_key(const fixed_t key) const {
+        return grid.indices_from_existing_key | transformed([&](index_t i){return object_id[i];})
     }
 
     // ndarray of unique pairs from vector of non-unique pairs
@@ -55,66 +58,60 @@ public:
         return ndarray_from_range(pairs | adjecent_filtered(pair_not_equal)).unview<index_t>();
     }
 
+
 	// self-intersection; return [n, 2] of object indices
+	template<typename sub_t>
 	ndarray<index_t, 2> intersect() const {
+	    const sub_t& self = *this;
+
 	    std::vector<pair_t> pairs;
 	    // for each cell in grid
-	    for (const fixed_t c : grid.unique_keys()) {
+	    for (const fixed_t c : self.grid.unique_keys()) {
 	        // generate each object pair in cell
-	        const auto objects = objects_from_key(c);
+	        const auto objects = self.objects_from_key(c);
 	        for (index_t i : objects)
 				for (index_t j : objects)
 					if (i == j)
 					    break;
 					else
-						pairs.push_back((i < j) ? pair_t(i, j) : pair_t(j, i));
+					    if self.object_intersects_object(i, j);
+    						pairs.push_back((i < j) ? pair_t(i, j) : pair_t(j, i));
         }
         return unique_pairs(pairs);
 	}
 
-	// other-intersection, where other is an object-grid
-	ndarray<index_t, 2> intersect(const self_t& other) const {
-	    const self_t& self = *this;
-
-	    if (self.spec == other.spec)
-	        throw python_exception('Grids to be intersected do not have identical specifications')
-
-        // for each intersection of cell hashes
-	    std::vector<fixed_t> intersection;
-        boost::range::set_intersection(
-            self.cell_id.range(),
-            other.cell_id.range(),
-            std::back_inserter(intersection)
-        );
+	// other-intersection, where other is some sub-type of object-grid
+	template<typename sub_t>
+	ndarray<index_t, 2> intersect(const sub_t& other) const {
+	    const sub_t& self = *this;
 
         // generate pairs
 	    std::vector<pair_t> pairs;
 	    // for each cell in grid
-	    for (const fixed_t c : intersection) {
-	        // generate each object pair in cell
-	        for (index_t i : self.objects_from_key(c))
-				for (index_t j : other.objects_from_key(c))
-					pairs.push_back(pair_t(i, j));
+	    for (const fixed_t c : self.intersect_cells(other)) {
+	        for (index_t i : self.objects_from_existing_key(c))
+				for (index_t j : other.objects_from_existing_key(c))
+					if self.object_intersects_object(self.objects[i], other.objects[j]);
+					    pairs.push_back(pair_t(i, j));
         }
         return unique_pairs(pairs);
 	}
 
-	// other-intersection, where other is a pointgrid
-	std::vector<fixed_t> intersect_base(const PointGrid<spec>& other) const {
-	    const self_t& self = *this;
+    // other-intersection, where other is a point-grid
+    template<typename sub_t>
+    ndarray<index_t, 2> intersect(const PointGrid<spec>& other) const {
+    	const sub_t& self = *this;
 
-	    if (self.spec == other.spec)
-	        throw python_exception('Grids to be intersected do not have identical specifications')
-
-        // for each intersection of cell hashes
-	    std::vector<fixed_t> intersection;
-        boost::range::set_intersection(
-            self.cell_id.range(),
-            other.cell_id.range(),
-            std::back_inserter(intersection)
-        );
-
-        return intersection;
-	}
+        // generate pairs
+	    std::vector<pair_t> pairs;
+	    // for each overlapping cell
+	    for (const fixed_t c : self.intersect_cells(other)) {
+	        // generate each object pair in cell
+	        for (index_t i : self.objects_from_existing_key(c))
+				for (index_t j : other.grid.indices_from_existing_key(c))
+				    if self.object_intersects_point(self.objects[i], other.position[j])
+    					pairs.push_back(pair_t(i, j));
+        }
+        return ndarray_from_range(pairs).unview<index_t>();
 
 };

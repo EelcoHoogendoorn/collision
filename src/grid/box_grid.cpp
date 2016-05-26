@@ -10,14 +10,15 @@
 template<typename spec_t>
 class BoxGrid : public ObjectGrid<spec_t> {
 
-    const ndarray<box_t>                    boxes;
-	const index_t                           n_boxes;    // number of boxes
+    typedef box_t                           object_t;
+    const ndarray<box_t>                    objects;
+	const index_t                           n_objects;    // number of boxes
 
 	// constructor
 	explicit BoxGrid(spec_t spec, ndarray<real_t, 3> boxes) :
 		spec(spec),
-		boxes(boxes.view<box_t>()),
-		n_boxes(boxes.size()),
+		objects(boxes.view<box_t>()),
+		n_objects(objects.size()),
 		cell_id(init_cells()),
         grid(cell_id)
 	{
@@ -25,10 +26,10 @@ class BoxGrid : public ObjectGrid<spec_t> {
 
 	// determine grid cells and corresponding object ids
 	auto init_cells() const {
-		std::vector<fixed_t> cell_id(n_boxes);
-		std::vector<index_t> object_id(n_boxes);
-		for (index_t b : irange(0, n_boxes))
-		    for (cell_t c: cells_from_box(boxes[b])) {
+		std::vector<fixed_t> cell_id(n_objects);
+		std::vector<index_t> object_id(n_objects);
+		for (index_t b : irange(0, n_objects))
+		    for (cell_t c: cells_from_box(objects[b])) {
 		        cell_id.push_back(spec.hash_from_cell(c));
 		        object_id.push_back(b);
 		    }
@@ -43,31 +44,19 @@ class BoxGrid : public ObjectGrid<spec_t> {
 
         const cell_t shape = ub - lb;
         const cell_t strides = spec.compute_strides(shape);
-        const index_t size = strides(NDim - 1) * shape(NDim - 1);
+        const index_t size = strides(n_dim - 1) * shape(n_dim - 1);
 
 		return irange(0, size)
-		    | transformed([&](auto h){return lb + (h % strides);});
+		        | transformed([&](auto h){return lb + ((h / strides) % shape);});
     }
 
-    inline static bool point_in_box(const vector_t& point, const box_t& box) {
-        return !((point < box.row(0)).any() || (point > box.row(1)).any());
+    inline static bool object_intersects_point(const box_t& box, const vector_t& point) {
+        return !((point < box.row(0)).any() || (box.row(1) < point).any());
     };
 
-    // generate box-point pairs, given a set of intersecting grid cells
-    ndarray<index_t, 2> intersect(const PointGrid<spec>& other) const {
-    	const self_t& self = *this;
-        const auto intersection = self.intersect_base(other);
+    inline static bool object_intersects_object(const box_t& l, const box_t& r) {
+        return !(l.row(1) < r.row(0)).any() || (r.row(1) < l.row(0)).any());
+    };
 
-        // generate pairs
-	    std::vector<pair_t> pairs;
-	    // for each cell in grid
-	    for (const fixed_t c : intersection) {
-	        // generate each object pair in cell
-	        for (index_t i : self.objects_from_key(c))
-				for (index_t j : other.indices_from_existing_key(c))
-				    if point_in_box(other.position[j], self.boxes[i])
-    					pairs.push_back(pair_t(i, j));
-        }
-        return ndarray_from_range(pairs).unview<index_t>();
 
 };
