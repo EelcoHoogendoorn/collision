@@ -64,8 +64,8 @@ public:
 	// intersect two sparse grids, to get shared occupied cells
 	template<typename other_t>
 	std::vector<fixed_t> intersect_cells(const other_t& other) const {
-//	    if (self.spec == other.spec)
-//	        throw python_exception('Grids to be intersected do not have identical specifications');
+	    if (self.spec == other.spec)
+	        throw python_exception("Grids to be intersected do not have identical specifications");
 
         // for each intersection of cell hashes
 	    std::vector<fixed_t> intersection;

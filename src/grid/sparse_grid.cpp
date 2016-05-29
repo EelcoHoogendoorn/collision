@@ -107,7 +107,6 @@ public:
 	    return  ((g == -1) ? irange(0, 0) : irange(pivots[g], pivots[g + 1]))
 		            | transformed([&](index_t i) {return permutation[i];});
 	}
-
 	// extra branch isnt required if the key is known to be valid
 	inline auto indices_from_existing_key(const key_t key) const {
 	    const index_t g = group_from_key[key];

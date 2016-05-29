@@ -2,67 +2,41 @@
 
 #include "stdafx.h"
 
-#include "grid_spec.cpp"
 #include "base_grid.cpp"
 #include "point_grid.cpp"
 
 
 template<typename spec_t, typename sub_t>
-class ObjectGrid : public BaseGrid<spec_t, ObjectGrid<>>{
+class ObjectGrid : public BaseGrid<spec_t, ObjectGrid<spec_t, sub_t>>{
     /*
     abstract base class
     map extended objects, such as bounding boxes, to a sparse grid
     the defining distinction with the PointGrid class is that every object may occupy multiple cells
     */
 public:
-    typedef ObjectGrid<spec_t>				self_t;
-
-    typedef typename spec_t::real_t         real_t;
-	typedef typename spec_t::index_t		index_t;
-	typedef typename spec_t::fixed_t		fixed_t;
-
-	typedef typename spec_t::box_t			box_t;
-	typedef typename spec_t::vector_t		vector_t;
-	typedef typename spec_t::cell_t			cell_t;
-	typedef erow<index_t, 2>                pair_t;
-
-	const spec_t				            spec;
+    typedef ObjectGrid<spec_t, sub_t>		self_t;
 
 public:
     // allocate as single 2xn array?
 	const ndarray<fixed_t>                  cell_id;     // the cell coordinates a box resides in
 	ndarray<index_t>                        object_id;   // id of box generating this grid entry
-    const index_t                           n_objects;
 	const SparseGrid                        grid;
 
 public:
 
     // given a cell hash key, return a range of the object indices located there
     auto objects_from_key(const fixed_t key) const {
-        return grid.indices_from_key | transformed([&](index_t i){return object_id[i];})
+        return self.grid.indices_from_key
+            | transformed([&](index_t i){return self.object_id[i];})
     }
     auto objects_from_existing_key(const fixed_t key) const {
-        return grid.indices_from_existing_key | transformed([&](index_t i){return object_id[i];})
-    }
-
-    // ndarray of unique pairs from vector of non-unique pairs
-    auto unique_pairs(std::vector<pair_t>& pairs) const {
-        auto pair_order(const pair_t& i, const pair_t& j) {
-            const pair_t d = i - j;
-            return d(0) * n_objects + d(1) > 0;
-        }
-        auto pair_not_equal(const pair_t& i, const pair_t& j) {
-            return (i != j).any();
-        }
-        boost::sort(pairs, pair_order);
-        return ndarray_from_range(pairs | adjecent_filtered(pair_not_equal)).unview<index_t>();
+        return self.grid.indices_from_existing_key
+            | transformed([&](index_t i){return self.object_id[i];})
     }
 
 
 	// self-intersection; return [n, 2] of object indices
 	ndarray<index_t, 2> intersect() const {
-	    const sub_t& self = *this;
-
 	    std::vector<pair_t> pairs;
 	    // for each cell in grid
 	    for (const fixed_t c : self.grid.unique_keys()) {
@@ -76,13 +50,11 @@ public:
 					    if self.object_intersects_object(i, j);
     						pairs.push_back((i < j) ? pair_t(i, j) : pair_t(j, i));
         }
-        return unique_pairs(pairs);
+        return self.unique_pairs(pairs);
 	}
 
 	// other-intersection, where other is some sub-type of object-grid
 	ndarray<index_t, 2> intersect(const sub_t& other) const {
-	    const sub_t& self = *this;
-
         // generate pairs
 	    std::vector<pair_t> pairs;
 	    // for each cell in grid
@@ -92,13 +64,11 @@ public:
 					if self.object_intersects_object(self.objects[i], other.objects[j]);
 					    pairs.push_back(pair_t(i, j));
         }
-        return unique_pairs(pairs);
+        return self.unique_pairs(pairs);
 	}
 
     // other-intersection, where other is a point-grid
     ndarray<index_t, 2> intersect(const PointGrid<spec>& other) const {
-    	const sub_t& self = *this;
-
         // generate pairs
 	    std::vector<pair_t> pairs;
 	    // for each overlapping cell

@@ -2,7 +2,6 @@
 
 #include "stdafx.h"
 
-#include "grid_spec.cpp"
 #include "base_grid.cpp"
 
 
@@ -101,12 +100,12 @@ public:
 		for (const fixed_t ci : self.grid.unique_keys()) {
             const auto bi = self.grid.indices_from_existing_key(ci);
 			//interaction within bucket
-			for (index_t pi : bi)
+			for (const index_t pi : bi)
 				for (index_t pj : bi)
 					if (pi == pj) break; else
 						wrapper(pi, pj);
 			//loop over all neighboring buckets
-			for (fixed_t o : offsets) {
+			for (const fixed_t o : offsets) {
 				const auto bj = self.grid.indices_from_key(ci + o);
 				for (const index_t pj : bj)		//loop over other guy first; he might be empty, giving early exit
 					for (const index_t pi : bi)
@@ -114,6 +113,8 @@ public:
 			}
 		}
 	}
+	// add optimized code path, which uses sorted nature of unique cell keys;
+	// for 3d, we only need to incrementally update 5 contiguous ranges around the center cell
 
     // compute [n, 2] array of all pairs within length_scale distance
 	ndarray<index_t, 2> get_pairs() const {
@@ -132,5 +133,3 @@ public:
 	}
 
 };
-
-
