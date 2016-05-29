@@ -124,14 +124,7 @@ public:
 	    for_each_pair([&](index_t i, index_t j, real_t d2) {
 	        pairs.push_back(pair_t(i, j));
 	    });
-	    index_t n_pairs(pairs.size());
-        ndarray<index_t, 2> output({ n_pairs, 2});
-
-        for (index_t p : irange(0, n_pairs)) {
-            output[p][0] = pairs[p][0];
-            output[p][1] = pairs[p][1];
-        }
-        return output;
+	    return self.as_pair_array(pairs);
 	}
 
 };

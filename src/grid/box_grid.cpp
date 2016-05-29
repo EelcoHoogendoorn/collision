@@ -56,7 +56,7 @@ public:
         const cell_t shape(ub - lb);
         const cell_t strides(self.spec.compute_strides(shape));
         const cell_t prod(shape * strides); // can we replace double int division by this?
-        const index_t size(prod(self.spec.n_dim_ - 1));
+        const index_t size(prod(prod.size() - 1));
 
         auto mod = [](cell_t l, cell_t r) {return l - ((l / r) * r);};
 

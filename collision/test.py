@@ -14,9 +14,11 @@ def GridSpec(points, scale):
     n_points, n_dim = points.shape
     return spectypemap[n_dim](points, scale)
 
-def PointGrid(spec, points, offset):
+def PointGrid(spec, points, offset=None):
     gridtypemap = {2: spatial.PointGrid2d, 3: spatial.PointGrid3d}
     n_points, n_dim = points.shape
+    if offset is None:
+        offset = np.zeros(1).astype(np.int32)
     return gridtypemap[n_dim](spec, points, offset)
 
 def BoxGrid(spec, boxes):
@@ -171,21 +173,27 @@ def test_point_correctness():
 
 def test_box_grid():
 
-    n = 40
-    ndim = 3
+    n = 4
+    ndim = 2
     points = (np.random.rand(n, ndim) * np.arange(ndim)).astype(np.float32)
     scale = 0.1
     bounds = np.array([np.zeros(ndim), np.arange(ndim)])
 
     boxes = points[:, None, :]
-    boxes = np.concatenate([boxes, boxes + 0.1], axis=1)
+    boxes = np.concatenate([boxes, boxes + scale], axis=1)
 
 
     spec = GridSpec(bounds.astype(np.float32), float(scale))
-    grid = BoxGrid(spec, boxes)
-    print (grid.permutation())
-    print (grid.object_id())
-    print(grid.intersect_self())
+    box_grid = BoxGrid(spec, boxes)
+    print (box_grid.permutation())
+    print (box_grid.object_id())
+    print(box_grid.unique_keys())
+
+    point_grid = PointGrid(spec, points+scale/2)
+    print(point_grid.unique_keys())
+
+    print(box_grid.intersect_points(point_grid))
+
 
 test_box_grid()
 

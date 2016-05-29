@@ -102,6 +102,10 @@ public:
 	        (l.box.row(0) == r.box.row(0)).all() &
 	        (l.strides == r.strides).all();
 	}
+	inline bool operator!=(const self_t& r) const {
+	    const self_t& l = *this;
+	    return !(l == r);
+	}
 
 	// initialize the stencil of hash offsets
 	// boil this info further down to contiguous stretches?

@@ -7,7 +7,6 @@
 
 
 
-
 template<typename spec_t, typename sub_t>
 class BaseGrid {
     /*
@@ -39,6 +38,7 @@ public:
     const index_t                           n_objects;
 
 	auto get_permutation()  const { return self.grid.permutation; }
+	auto get_unique_keys()  const { return ndarray_from_range(self.grid.unique_keys()); }
 
 public:
     BaseGrid(
@@ -48,6 +48,17 @@ public:
         spec        (spec),
         n_objects   (n_objects)
     {
+    }
+
+    // for some stupid reason cant get normal casting mechanisms to work
+    ndarray<index_t, 2> as_pair_array(const std::vector<pair_t>& pairs) const {
+	    index_t n_pairs(pairs.size());
+        ndarray<index_t, 2> output({ n_pairs, 2});
+        for (index_t p : irange(0, n_pairs)) {
+            output[p][0] = pairs[p][0];
+            output[p][1] = pairs[p][1];
+        }
+        return output;
     }
 
     // ndarray of unique pairs from vector of non-unique pairs
@@ -64,28 +75,20 @@ public:
         std::vector<pair_t> unique_pairs(0);
         for (pair_t& p : pairs | adjacent_filtered(pair_not_equal))
             unique_pairs.push_back(p);
-
-	    index_t n_pairs(unique_pairs.size());
-        ndarray<index_t, 2> output({ n_pairs, 2});
-
-        for (index_t p : irange(0, n_pairs)) {
-            output[p][0] = unique_pairs[p][0];
-            output[p][1] = unique_pairs[p][1];
-        }
-        return output;
+        return self.as_pair_array(unique_pairs);
     }
 
 	// intersect two sparse grids, to get shared occupied cells
 	template<typename other_t>
 	std::vector<fixed_t> intersect_cells(const other_t& other) const {
-	    if (self.spec == other.spec)
+	    if (self.spec != other.spec)
 	        throw python_exception("Grids to be intersected do not have identical specifications");
 
         // for each intersection of cell hashes
 	    std::vector<fixed_t> intersection;
         boost::range::set_intersection(
-            self.cell_id.range(),
-            other.cell_id.range(),
+            self.grid.unique_keys(),
+            other.grid.unique_keys(),
             std::back_inserter(intersection)
         );
         return intersection;

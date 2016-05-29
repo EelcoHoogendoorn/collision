@@ -39,9 +39,7 @@ public:
 	// self-intersection; return [n, 2] of object indices
 	ndarray<index_t, 2> intersect_self() const {
 	    std::vector<pair_t> pairs;
-	    // for each cell in grid
 	    for (const fixed_t c : self.grid.unique_keys()) {
-	        // generate each object pair in cell
 	        const auto obj = self.objects_from_key(c);
 	        for (const index_t i : obj)
 				for (const index_t j : obj)
@@ -58,9 +56,7 @@ public:
 	// other-intersection, where other is some sub-type of object-grid
 	template<typename other_t>
 	ndarray<index_t, 2> intersect(const other_t& other) const {
-        // generate pairs
 	    std::vector<pair_t> pairs;
-	    // for each cell in grid
 	    for (const fixed_t c : self.intersect_cells(other))
 	        for (index_t i : self.objects_from_existing_key(c))
 				for (index_t j : other.objects_from_existing_key(c))
@@ -71,15 +67,13 @@ public:
 
     // other-intersection, where other is a point-grid
     ndarray<index_t, 2> intersect_points(const PointGrid<spec_t>& other) const {
-        // generate pairs
 	    std::vector<pair_t> pairs;
-	    // for each overlapping cell
 	    for (const fixed_t c : self.intersect_cells(other))
 	        for (index_t i : self.objects_from_existing_key(c))
 				for (index_t j : other.grid.indices_from_existing_key(c))
 				    if (self.object_intersects_point(self.objects[i], other.position[j]))
     					pairs.push_back(pair_t(i, j));
-        return ndarray_from_range(pairs).unview<index_t>();
+        return self.as_pair_array(pairs);
     }
 
 };
