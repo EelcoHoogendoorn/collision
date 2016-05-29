@@ -8,6 +8,8 @@ https://github.com/julienr/boost_numpy_eigen
 make ndarray subclass of numpy::boost
 
 think about class relations; composition vs inheritance. how much code can be shared between pointgrid and objectgrid?
+use design pattern where by template base class method by subtype? ah just reinvented CRTP :)
+constructor order determines a lot
 
 further optimize pair generation
 
@@ -15,7 +17,7 @@ another speedup possibility; map triangle bbs to pointgrid; then intersect occup
 
 improve raytracing of spheres
 
-add implicit integration
+add implicit integration; more efficient use of collision points
 
 current hash map may degrade performance for adversarial grid shapes.
 perhaps a binary-search-sorted map would be an improvement

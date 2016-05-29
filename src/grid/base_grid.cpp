@@ -6,15 +6,21 @@
 #include "sparse_grid.cpp"
 
 
-template<typename spec_t>
+template<typename spec_t, typename sub_t>
 class BaseGrid {
     /*
-    abstract base class
-    map extended objects, such as bounding boxes, to a sparse grid
-    the defining distinction with the PointGrid class is that every object may occupy multiple cells
+    abstract base class using CRTP, or compile-time polymorphism
+    for code reuse between point and object grids
+
+    Requirements on sub_t:
+        self.grid, type SparseGrid
+        self.cell_id, type ndarray<fixed_t>
+
+
+    cant put any state here, since it messes with initialization order
     */
 public:
-    typedef BaseGrid<spec_t>				self_t;
+    typedef BaseGrid<spec_t, sub_t>			base_t;
     typedef typename spec_t::real_t         real_t;
 	typedef typename spec_t::index_t		index_t;
 	typedef typename spec_t::fixed_t		fixed_t;
@@ -24,19 +30,29 @@ public:
 	typedef typename spec_t::cell_t			cell_t;
 	typedef erow<index_t, 2>                pair_t;
 
+
+public:
+    sub_t&                                  self;
 	const spec_t				            spec;
+    const index_t                           n_objects;
+
+	auto get_permutation()  const { return self.grid.permutation; }
 
 public:
-	const ndarray<fixed_t>                  cell_id;
-	const SparseGrid                        grid;
-
-public:
+    BaseGrid(
+        const spec_t spec,
+        const index_t n_objects) :
+        self        (*static_cast<sub_t*>(this)),
+        spec        (spec),
+        n_objects   (n_objects)
+    {
+    }
 
     // ndarray of unique pairs from vector of non-unique pairs
     auto unique_pairs(std::vector<pair_t>& pairs) const {
         auto pair_order(const pair_t& i, const pair_t& j) {
             const pair_t d = i - j;
-            return d(0) * n_objects + d(1) > 0;
+            return d(0) * self.n_objects + d(1) > 0;
         }
         auto pair_not_equal(const pair_t& i, const pair_t& j) {
             return (i != j).any();
@@ -46,11 +62,10 @@ public:
     }
 
 	// intersect two sparse grids, to get shared occupied cells
-	std::vector<fixed_t> intersect_cells(const self_t& other) const {
-	    const self_t& self = *this;
-
-	    if (self.spec == other.spec)
-	        throw python_exception('Grids to be intersected do not have identical specifications')
+	template<typename other_t>
+	std::vector<fixed_t> intersect_cells(const other_t& other) const {
+//	    if (self.spec == other.spec)
+//	        throw python_exception('Grids to be intersected do not have identical specifications');
 
         // for each intersection of cell hashes
 	    std::vector<fixed_t> intersection;
@@ -59,9 +74,7 @@ public:
             other.cell_id.range(),
             std::back_inserter(intersection)
         );
-
         return intersection;
 	}
-
 
 };

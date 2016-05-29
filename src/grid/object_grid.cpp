@@ -3,12 +3,12 @@
 #include "stdafx.h"
 
 #include "grid_spec.cpp"
-#include "sparse_grid.cpp"
+#include "base_grid.cpp"
 #include "point_grid.cpp"
 
 
-template<typename spec_t>
-class ObjectGrid {
+template<typename spec_t, typename sub_t>
+class ObjectGrid : public BaseGrid<spec_t, ObjectGrid<>>{
     /*
     abstract base class
     map extended objects, such as bounding boxes, to a sparse grid
@@ -60,7 +60,6 @@ public:
 
 
 	// self-intersection; return [n, 2] of object indices
-	template<typename sub_t>
 	ndarray<index_t, 2> intersect() const {
 	    const sub_t& self = *this;
 
@@ -81,7 +80,6 @@ public:
 	}
 
 	// other-intersection, where other is some sub-type of object-grid
-	template<typename sub_t>
 	ndarray<index_t, 2> intersect(const sub_t& other) const {
 	    const sub_t& self = *this;
 
@@ -98,7 +96,6 @@ public:
 	}
 
     // other-intersection, where other is a point-grid
-    template<typename sub_t>
     ndarray<index_t, 2> intersect(const PointGrid<spec>& other) const {
     	const sub_t& self = *this;
 

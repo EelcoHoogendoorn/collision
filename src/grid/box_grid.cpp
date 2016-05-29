@@ -8,7 +8,7 @@
 
 
 template<typename spec_t>
-class BoxGrid : public ObjectGrid<spec_t> {
+class BoxGrid : public ObjectGrid<spec_t, BoxGrid> {
 
     typedef box_t                           object_t;
     const ndarray<box_t>                    objects;
