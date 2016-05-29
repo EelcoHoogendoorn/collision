@@ -20,12 +20,17 @@ public:
 	typedef erow    <real_t ,    n_dim>	    vector_t;
 	typedef erow    <fixed_t,    n_dim>	    cell_t;
 
+
+    const index_t n_dim_;
 	const real_t scale;    // size of a virtual voxel
 	const box_t  box;      // maximum extent of pointcloud; used to map coordinates to positive integers
 	const cell_t shape;    // number of virtual buckets in each direction; used to prevent out-of-bound lookup
 	const cell_t strides;  // for lex-ranking cells
 
-	GridSpec(ndarray<real_t, 2> position, real_t scale) :
+	GridSpec(
+	    const ndarray<real_t, 2> position,
+	    const real_t scale) :
+	    n_dim_  (n_dim),
 		scale	(scale),
 		box		(init_box(position)),
 		shape	(init_shape()),
@@ -35,7 +40,7 @@ public:
 
 private:
 	//determine bounding box from point cloud positions
-	auto init_box(ndarray<real_t, 2> position) const {
+	auto init_box(const ndarray<real_t, 2> position) const {
 	    return compute_bounding_box(position.view<vector_t>());
 	}
 	// integer shape of the domain
@@ -57,8 +62,8 @@ public:
 			strides(i) = strides(i - 1) * shape(i - 1);
 		return strides;
     }
-    static auto compute_bounding_box(ndarray<vector_t> points) {
-		real_t inf = std::numeric_limits<real_t>::infinity();
+    static auto compute_bounding_box(const ndarray<vector_t> points) {
+		const real_t inf = std::numeric_limits<real_t>::infinity();
 		box_t box;
 		box.row(0).fill(+inf);
 		box.row(1).fill(-inf);
@@ -83,11 +88,11 @@ public:
 		return (cell * strides).sum();
 	}
 
-	inline bool operator==(const self_t& r) {
+	inline bool operator==(const self_t& r) const {
 	    const self_t& l = *this;
 	    return (l.scale == r.scale) &
 	        (l.box.row(0) == r.box.row(0)).all() &
-	        (l.strides ==  r.strides).all();
+	        (l.strides == r.strides).all();
 	}
 
 	// initialize the stencil of hash offsets

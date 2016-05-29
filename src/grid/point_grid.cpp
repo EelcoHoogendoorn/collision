@@ -12,6 +12,7 @@ class PointGrid : public BaseGrid<spec_t, PointGrid<spec_t>> {
 	*/
 
 
+
 public:
     typedef PointGrid<spec_t>				self_t;
 

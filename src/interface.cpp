@@ -62,10 +62,6 @@ BOOST_PYTHON_MODULE(Collision)
 		.def("cells",       &Grid2d::get_cells)
 		.def("permutation", &Grid2d::get_permutation)
         .def("pairs",       &Grid2d::get_pairs)
-//		.add_property("pivots",     &Grid2d::get_pivots,      &Grid2d::set_pivots)
-//		.def_readonly("n_buckets",  &Grid2d::n_buckets)
-//	    .def("stencil", &Spec2d::compute_offsets)
-//		.def("unit_test", &Grid2::unit_test)
 		;
 
 	class_<Spec3d>("Spec3d", init<ndarray<real_t, 2>, real_t>())
@@ -76,8 +72,11 @@ BOOST_PYTHON_MODULE(Collision)
 		.def("permutation", &Grid3d::get_permutation)
         .def("pairs",       &Grid3d::get_pairs)
         .def("update",      &Grid3d::update)
-//		.def("unit_test", &Grid3::unit_test)
 		;
+//	class_<BoxGrid3d>("BoxGrid3d", init<Spec3d, ndarray<real_t, 3>>())
+//		.def("permutation", &BoxGrid3d::get_permutation)
+//        .def("intersect",   &BoxGrid3d::intersect)
+//		;
 
 //	class_<Mesh>("Mesh", init<ndarray<float32, 2>, ndarray<float32, 2>, ndarray<int32, 2>, float32, float32>())
 //		.add_property("boxes",      &Mesh::get_boxes, &Mesh::set_boxes)
