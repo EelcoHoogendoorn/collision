@@ -23,9 +23,10 @@ typedef int32_t     index_t;        // indexing type; we never expect to have mo
 typedef GridSpec<real_t, fixed_t, index_t, 2> Spec2d;
 typedef GridSpec<real_t, fixed_t, index_t, 3> Spec3d;
 
-typedef PointGrid<Spec2d> Grid2d;
-typedef PointGrid<Spec3d> Grid3d;
+typedef PointGrid<Spec2d> PointGrid2d;
+typedef PointGrid<Spec3d> PointGrid3d;
 
+typedef BoxGrid<Spec2d> BoxGrid2d;
 typedef BoxGrid<Spec3d> BoxGrid3d;
 
 //typedef TriangleMesh<float32> Mesh;
@@ -56,26 +57,32 @@ BOOST_PYTHON_MODULE(Collision)
 
 
 	class_<Spec2d>("Spec2d", init<ndarray<real_t, 2>, real_t>())
-	    .def("stencil", &Spec2d::compute_offsets)
+	    .def("stencil",             &Spec2d::compute_offsets)
 		;
-	class_<Grid2d>("Grid2d", init<Spec2d, ndarray<real_t, 2>, ndarray<index_t>>())
-		.def("cells",       &Grid2d::get_cells)
-		.def("permutation", &Grid2d::get_permutation)
-        .def("pairs",       &Grid2d::get_pairs)
+	class_<PointGrid2d>("PointGrid2d", init<Spec2d, ndarray<real_t, 2>, ndarray<index_t>>())
+		.def("cells",               &PointGrid2d::get_cells)
+		.def("permutation",         &PointGrid2d::get_permutation)
+        .def("intersect_self",      &PointGrid2d::get_pairs)
+		;
+	class_<BoxGrid2d>("BoxGrid2d", init<Spec2d, ndarray<real_t, 2>>())
+		.def("permutation",		    &BoxGrid2d::get_permutation)
+		.def("object_id",		    &BoxGrid2d::get_object_id)
+		.def("intersect_self",	    &BoxGrid2d::intersect_self)
 		;
 
 	class_<Spec3d>("Spec3d", init<ndarray<real_t, 2>, real_t>())
-	    .def("stencil", &Spec3d::compute_offsets)
+	    .def("stencil",             &Spec3d::compute_offsets)
 		;
-	class_<Grid3d>("Grid3d", init<Spec3d, ndarray<real_t, 2>, ndarray<index_t>>())
-		.def("cells",       &Grid3d::get_cells)
-		.def("permutation", &Grid3d::get_permutation)
-        .def("pairs",       &Grid3d::get_pairs)
-        .def("update",      &Grid3d::update)
+	class_<PointGrid3d>("PointGrid3d", init<Spec3d, ndarray<real_t, 2>, ndarray<index_t>>())
+		.def("cells",               &PointGrid3d::get_cells)
+		.def("permutation",         &PointGrid3d::get_permutation)
+        .def("intersect_self",      &PointGrid3d::get_pairs)
+        .def("update",              &PointGrid3d::update)
 		;
 	class_<BoxGrid3d>("BoxGrid3d", init<Spec3d, ndarray<real_t, 2>>())
 		.def("permutation",		   &BoxGrid3d::get_permutation)
 		.def("object_id",		   &BoxGrid3d::get_object_id)
+		.def("intersect_self",	   &BoxGrid3d::intersect_self)
 
 //        .def("intersect_points",   &BoxGrid3d::intersect_points)
 		;

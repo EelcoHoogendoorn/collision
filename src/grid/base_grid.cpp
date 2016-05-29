@@ -52,15 +52,27 @@ public:
 
     // ndarray of unique pairs from vector of non-unique pairs
     auto unique_pairs(std::vector<pair_t>& pairs) const {
-        auto pair_order(const pair_t& i, const pair_t& j) {
+        auto pair_order = [&](const pair_t& i, const pair_t& j) {
             const pair_t d = i - j;
-            return d(0) * self.n_objects + d(1) > 0;
-        }
-        auto pair_not_equal(const pair_t& i, const pair_t& j) {
+            return d(0) * self.n_objects + d(1) < 0;
+        };
+        auto pair_not_equal = [](const pair_t& i, const pair_t& j) {
             return (i != j).any();
-        }
+        };
         boost::sort(pairs, pair_order);
-        return ndarray_from_range(pairs | adjecent_filtered(pair_not_equal)).unview<index_t>();
+
+        std::vector<pair_t> unique_pairs(0);
+        for (pair_t& p : pairs | adjacent_filtered(pair_not_equal))
+            unique_pairs.push_back(p);
+
+	    index_t n_pairs(unique_pairs.size());
+        ndarray<index_t, 2> output({ n_pairs, 2});
+
+        for (index_t p : irange(0, n_pairs)) {
+            output[p][0] = unique_pairs[p][0];
+            output[p][1] = unique_pairs[p][1];
+        }
+        return output;
     }
 
 	// intersect two sparse grids, to get shared occupied cells

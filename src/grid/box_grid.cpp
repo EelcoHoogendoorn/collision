@@ -29,6 +29,7 @@ public:
 	    const ndarray<real_t, 2> boxes) :
 	    ObjectGrid  (spec, boxes.size()),
 		objects     (boxes.view<box_t>()),
+		object_id	(ndarray<index_t>({0})),
 		cell_id     (init_cells()),
         grid        (cell_id)
 	{
@@ -36,8 +37,8 @@ public:
 
 	// determine grid cells and corresponding object ids
 	auto init_cells() const {
-		std::vector<fixed_t> _cell_id(self.n_objects);
-		std::vector<index_t> _object_id(self.n_objects);
+		std::vector<fixed_t> _cell_id(0);
+		std::vector<index_t> _object_id(0);
 		for (const index_t o : irange(0, self.n_objects))
 		    for (const cell_t c: self.cells_from_box(self.objects[o])) {
 		        _cell_id.push_back(self.spec.hash_from_cell(c));
@@ -51,16 +52,16 @@ public:
     auto cells_from_box(const box_t& box) const {
     	const cell_t lb = self.spec.cell_from_position(box.row(0)).max(self.spec.zeros);
 		const cell_t ub = self.spec.cell_from_position(box.row(1)).min(self.spec.shape) + 1;
-		std::vector<cell_t> v = {lb, lb};
-        return v;
 
-//        const cell_t shape(ub - lb);
-//        const cell_t strides(self.spec.compute_strides(shape));
-//        const index_t size(strides(self.spec.n_dim_ - 1) * shape(self.spec.n_dim_ - 1));
-//
-//		return irange(0, size)
-////		        | transformed([&](auto h){return lb + ((h / strides) % shape);});
-//		        | transformed([&](auto h){return lb;});
+        const cell_t shape(ub - lb);
+        const cell_t strides(self.spec.compute_strides(shape));
+        const cell_t prod(shape * strides); // can we replace double int division by this?
+        const index_t size(prod(self.spec.n_dim_ - 1));
+
+        auto mod = [](cell_t l, cell_t r) {return l - ((l / r) * r);};
+
+		return irange(0, size)
+		        | transformed([&](auto h){return lb + mod(h / strides, shape);});
     }
 
     inline static bool object_intersects_point(const box_t& box, const vector_t& point) {

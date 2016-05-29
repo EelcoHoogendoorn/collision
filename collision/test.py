@@ -9,6 +9,22 @@ import  collision.Collision as spatial
 from collision.mesh import Mesh, icosphere
 
 
+def GridSpec(points, scale):
+    spectypemap = {2: spatial.Spec2d, 3: spatial.Spec3d}
+    n_points, n_dim = points.shape
+    return spectypemap[n_dim](points, scale)
+
+def PointGrid(spec, points, offset):
+    gridtypemap = {2: spatial.PointGrid2d, 3: spatial.PointGrid3d}
+    n_points, n_dim = points.shape
+    return gridtypemap[n_dim](spec, points, offset)
+
+def BoxGrid(spec, boxes):
+    gridtypemap = {2: spatial.BoxGrid2d, 3: spatial.BoxGrid3d}
+    n_boxes, _, n_dim = boxes.shape
+    return gridtypemap[n_dim](spec, boxes.reshape(n_boxes, -1))
+
+
 
 def test_basic():
     lengthscale = 0.5
@@ -88,22 +104,6 @@ def test_collision():
             print(info.depth[mask])
 
 
-def GridSpec(points, scale):
-    spectypemap = {2: spatial.Spec2d, 3: spatial.Spec3d}
-    n_points, n_dim = points.shape
-    return spectypemap[n_dim](points, scale)
-
-def PointGrid(spec, points, offset):
-    gridtypemap = {2: spatial.Grid2d, 3: spatial.Grid3d}
-    n_points, n_dim = points.shape
-    return gridtypemap[n_dim](spec, points, offset)
-
-def BoxGrid(spec, boxes):
-    gridtypemap = {3: spatial.BoxGrid3d}
-    n_boxes, _, n_dim = boxes.shape
-    return gridtypemap[n_dim](spec, boxes.reshape(n_boxes, -1))
-
-
 def test_point_performance():
     import itertools
     stencil = [-1, 0, 1]
@@ -173,19 +173,19 @@ def test_box_grid():
 
     n = 40
     ndim = 3
-    points = (np.random.rand(n, ndim) * [1, 2, 3]).astype(np.float32)
+    points = (np.random.rand(n, ndim) * np.arange(ndim)).astype(np.float32)
     scale = 0.1
-    bounds = np.array([[0, 0, 0], [1, 2, 3]])
+    bounds = np.array([np.zeros(ndim), np.arange(ndim)])
 
-    boxes = points[:10, None, :]
-    boxes = np.concatenate([boxes, boxes + 0.2], axis=1)
+    boxes = points[:, None, :]
+    boxes = np.concatenate([boxes, boxes + 0.1], axis=1)
 
 
     spec = GridSpec(bounds.astype(np.float32), float(scale))
     grid = BoxGrid(spec, boxes)
-    print (grid.permutation)
-
-
+    print (grid.permutation())
+    print (grid.object_id())
+    print(grid.intersect_self())
 
 test_box_grid()
 
