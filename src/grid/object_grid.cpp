@@ -68,7 +68,7 @@ public:
 	}
 
     // other-intersection, where other is a point-grid
-    ndarray<index_t, 2> intersect(const PointGrid<spec_t>& other) const {
+    ndarray<index_t, 2> intersect_points(const PointGrid<spec_t>& other) const {
         // generate pairs
 	    std::vector<pair_t> pairs;
 	    // for each overlapping cell

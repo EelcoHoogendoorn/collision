@@ -25,6 +25,7 @@ public:
 	const real_t scale;    // size of a virtual voxel
 	const box_t  box;      // maximum extent of pointcloud; used to map coordinates to positive integers
 	const cell_t shape;    // number of virtual buckets in each direction; used to prevent out-of-bound lookup
+	const cell_t zeros;    //
 	const cell_t strides;  // for lex-ranking cells
 
 	GridSpec(
@@ -34,6 +35,7 @@ public:
 		scale	(scale),
 		box		(init_box(position)),
 		shape	(init_shape()),
+		zeros   (init_zeros()),
 		strides	(init_strides())
 	{
 	}
@@ -46,6 +48,12 @@ private:
 	// integer shape of the domain
 	cell_t init_shape() const {      // interestingly, using auto as return type fails spectacularly
 		return transform(box.row(1) - box.row(0)).cast<fixed_t>() + 1;	// use +0.5 before cast?
+	}
+	// often useful
+	cell_t init_zeros() const {      // interestingly, using auto as return type fails spectacularly
+	    cell_t z;
+	    z.fill(0);
+		return z;
 	}
 	// find strides for efficient lexsort
 	auto init_strides() const {

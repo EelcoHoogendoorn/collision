@@ -54,3 +54,4 @@ msvs
 *.pyc
 *.pyd
 src/vispy-master
+collision/.cache/v/cache/lastfailed

@@ -98,6 +98,11 @@ def PointGrid(spec, points, offset):
     n_points, n_dim = points.shape
     return gridtypemap[n_dim](spec, points, offset)
 
+def BoxGrid(spec, boxes):
+    gridtypemap = {3: spatial.BoxGrid3d}
+    n_boxes, _, n_dim = boxes.shape
+    return gridtypemap[n_dim](spec, boxes.reshape(n_boxes, -1))
+
 
 def test_point_performance():
     import itertools
@@ -164,5 +169,23 @@ def test_point_correctness():
     assert np.alltrue(npi.unique(tree_pairs) == npi.unique(np.sort(pairs, axis=1)))
 
 
-test_point_correctness()
+def test_box_grid():
+
+    n = 40
+    ndim = 3
+    points = (np.random.rand(n, ndim) * [1, 2, 3]).astype(np.float32)
+    scale = 0.1
+    bounds = np.array([[0, 0, 0], [1, 2, 3]])
+
+    boxes = points[:10, None, :]
+    boxes = np.concatenate([boxes, boxes + 0.2], axis=1)
+
+
+    spec = GridSpec(bounds.astype(np.float32), float(scale))
+    grid = BoxGrid(spec, boxes)
+    print (grid.permutation)
+
+
+
+test_box_grid()
 

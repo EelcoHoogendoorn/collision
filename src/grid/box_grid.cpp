@@ -20,10 +20,13 @@ public:
 	const ndarray<fixed_t>                  cell_id;     // the cell coordinates a box resides in
 	const SparseGrid<fixed_t, index_t>      grid;        // defines buckets
 
+	auto get_object_id()  const { return self.object_id; }
+
+
 	// constructor
 	explicit BoxGrid(
 	    const spec_t spec,
-	    const ndarray<real_t, 3> boxes) :
+	    const ndarray<real_t, 2> boxes) :
 	    ObjectGrid  (spec, boxes.size()),
 		objects     (boxes.view<box_t>()),
 		cell_id     (init_cells()),
@@ -33,29 +36,31 @@ public:
 
 	// determine grid cells and corresponding object ids
 	auto init_cells() const {
-		std::vector<fixed_t> cell_id(self.n_objects);
-		std::vector<index_t> object_id(self.n_objects);
+		std::vector<fixed_t> _cell_id(self.n_objects);
+		std::vector<index_t> _object_id(self.n_objects);
 		for (const index_t o : irange(0, self.n_objects))
 		    for (const cell_t c: self.cells_from_box(self.objects[o])) {
-		        cell_id.push_back(self.spec.hash_from_cell(c));
-		        object_id.push_back(o);
+		        _cell_id.push_back(self.spec.hash_from_cell(c));
+		        _object_id.push_back(o);
 		    }
-		self.object_id = ndarray_from_range(object_id);
-		return ndarray_from_range(cell_id);
+		self.object_id = ndarray_from_range(_object_id);
+		return ndarray_from_range(_cell_id);
 	}
 
     // range of all cells in a box in world space; ndim compatible, and minimal branching.
     auto cells_from_box(const box_t& box) const {
-    	const cell_t lb = self.spec.cell_from_position(box.row(0)).max(cell_t(0, 0, 0));
+    	const cell_t lb = self.spec.cell_from_position(box.row(0)).max(self.spec.zeros);
 		const cell_t ub = self.spec.cell_from_position(box.row(1)).min(self.spec.shape) + 1;
+		std::vector<cell_t> v = {lb, lb};
+        return v;
 
-        const cell_t shape(ub - lb);
-        const cell_t strides(self.spec.compute_strides(shape));
-        const index_t size(strides(self.spec.n_dim_ - 1) * shape(self.spec.n_dim_ - 1));
-
-		return irange(0, size)
-//		        | transformed([&](auto h){return lb + ((h / strides) % shape);});
-		        | transformed([&](auto h){return lb;});
+//        const cell_t shape(ub - lb);
+//        const cell_t strides(self.spec.compute_strides(shape));
+//        const index_t size(strides(self.spec.n_dim_ - 1) * shape(self.spec.n_dim_ - 1));
+//
+//		return irange(0, size)
+////		        | transformed([&](auto h){return lb + ((h / strides) % shape);});
+//		        | transformed([&](auto h){return lb;});
     }
 
     inline static bool object_intersects_point(const box_t& box, const vector_t& point) {

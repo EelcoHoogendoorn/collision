@@ -73,10 +73,12 @@ BOOST_PYTHON_MODULE(Collision)
         .def("pairs",       &Grid3d::get_pairs)
         .def("update",      &Grid3d::update)
 		;
-//	class_<BoxGrid3d>("BoxGrid3d", init<Spec3d, ndarray<real_t, 3>>())
-//		.def("permutation", &BoxGrid3d::get_permutation)
-//        .def("intersect",   &BoxGrid3d::intersect)
-//		;
+	class_<BoxGrid3d>("BoxGrid3d", init<Spec3d, ndarray<real_t, 2>>())
+		.def("permutation",		   &BoxGrid3d::get_permutation)
+		.def("object_id",		   &BoxGrid3d::get_object_id)
+
+//        .def("intersect_points",   &BoxGrid3d::intersect_points)
+		;
 
 //	class_<Mesh>("Mesh", init<ndarray<float32, 2>, ndarray<float32, 2>, ndarray<int32, 2>, float32, float32>())
 //		.add_property("boxes",      &Mesh::get_boxes, &Mesh::set_boxes)
