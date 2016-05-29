@@ -7,22 +7,23 @@
 
 
 template<typename spec_t, typename sub_t>
-class ObjectGrid : public BaseGrid<spec_t, ObjectGrid<spec_t, sub_t>>{
+class ObjectGrid : public BaseGrid<spec_t, ObjectGrid<spec_t, sub_t>> {
     /*
-    abstract base class
     map extended objects, such as bounding boxes, to a sparse grid
     the defining distinction with the PointGrid class is that every object may occupy multiple cells
     */
 public:
     typedef ObjectGrid<spec_t, sub_t>		self_t;
 
-public:
-    // allocate as single 2xn array?
-	const ndarray<fixed_t>                  cell_id;     // the cell coordinates a box resides in
-	ndarray<index_t>                        object_id;   // id of box generating this grid entry
-	const SparseGrid                        grid;
 
 public:
+    ObjectGrid(
+        const spec_t spec,
+        const index_t n_objects) :
+        BaseGrid(spec, n_objects)
+    {
+    }
+
 
     // given a cell hash key, return a range of the object indices located there
     auto objects_from_key(const fixed_t key) const {
@@ -42,8 +43,8 @@ public:
 	    for (const fixed_t c : self.grid.unique_keys()) {
 	        // generate each object pair in cell
 	        const auto objects = self.objects_from_key(c);
-	        for (index_t i : objects)
-				for (index_t j : objects)
+	        for (const index_t i : objects)
+				for (const index_t j : objects)
 					if (i == j)
 					    break;
 					else
@@ -54,7 +55,8 @@ public:
 	}
 
 	// other-intersection, where other is some sub-type of object-grid
-	ndarray<index_t, 2> intersect(const sub_t& other) const {
+	template<typename other_t>
+	ndarray<index_t, 2> intersect(const other_t& other) const {
         // generate pairs
 	    std::vector<pair_t> pairs;
 	    // for each cell in grid
@@ -68,7 +70,7 @@ public:
 	}
 
     // other-intersection, where other is a point-grid
-    ndarray<index_t, 2> intersect(const PointGrid<spec>& other) const {
+    ndarray<index_t, 2> intersect(const PointGrid<spec_t>& other) const {
         // generate pairs
 	    std::vector<pair_t> pairs;
 	    // for each overlapping cell
@@ -80,5 +82,6 @@ public:
     					pairs.push_back(pair_t(i, j));
         }
         return ndarray_from_range(pairs).unview<index_t>();
+    }
 
 };

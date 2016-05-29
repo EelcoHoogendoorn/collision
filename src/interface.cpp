@@ -10,6 +10,7 @@ boost python interface definition
 
 #include "grid/grid_spec.cpp"
 #include "grid/point_grid.cpp"
+#include "grid/box_grid.cpp"
 //#include "triangle_mesh.cpp"
 //#include "collision_info.cpp"
 
@@ -24,6 +25,8 @@ typedef GridSpec<real_t, fixed_t, index_t, 3> Spec3d;
 
 typedef PointGrid<Spec2d> Grid2d;
 typedef PointGrid<Spec3d> Grid3d;
+
+typedef BoxGrid<Spec3d> BoxGrid3d;
 
 //typedef TriangleMesh<float32> Mesh;
 //typedef CollisionInfo<Grid3d, Mesh> Info;

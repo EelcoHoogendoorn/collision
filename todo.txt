@@ -30,3 +30,5 @@ add example of hierarchical use of grid classes
 release GIL where appropriate; perhaps reduce internal reliance on ndarrays
 
 implement mesh chunking
+
+opencl variant?

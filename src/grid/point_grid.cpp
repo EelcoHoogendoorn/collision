@@ -11,6 +11,7 @@ class PointGrid : public BaseGrid<spec_t, PointGrid<spec_t>> {
 	provide spatial lookup in O(1) time for n-dimensional point clouds
 	*/
 
+
 public:
     typedef PointGrid<spec_t>				self_t;
 

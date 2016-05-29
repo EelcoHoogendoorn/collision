@@ -6,6 +6,7 @@
 #include "sparse_grid.cpp"
 
 
+
 template<typename spec_t, typename sub_t>
 class BaseGrid {
     /*

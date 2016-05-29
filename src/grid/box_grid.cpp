@@ -13,6 +13,11 @@ class BoxGrid : public ObjectGrid<spec_t, BoxGrid<spec_t>> {
 
     typedef box_t                           object_t;
     const ndarray<box_t>                    objects;
+public:
+    // allocate as single 2xn array?
+	ndarray<index_t>                        object_id;   // id of box generating this grid entry
+	const ndarray<fixed_t>                  cell_id;     // the cell coordinates a box resides in
+	const SparseGrid                        grid;
 
 	// constructor
 	explicit BoxGrid(
@@ -53,10 +58,10 @@ class BoxGrid : public ObjectGrid<spec_t, BoxGrid<spec_t>> {
 
     inline static bool object_intersects_point(const box_t& box, const vector_t& point) {
         return !((point < box.row(0)).any() || (box.row(1) < point).any());
-    };
+    }
 
     inline static bool object_intersects_object(const box_t& l, const box_t& r) {
-        return !(l.row(1) < r.row(0)).any() || (r.row(1) < l.row(0)).any());
-    };
+        return !((l.row(1) < r.row(0)).any() || (r.row(1) < l.row(0)).any());
+    }
 
 };
