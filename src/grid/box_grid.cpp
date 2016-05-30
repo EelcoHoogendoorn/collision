@@ -39,11 +39,13 @@ public:
 	auto init_cells() const {
 		std::vector<fixed_t> _cell_id(0);
 		std::vector<index_t> _object_id(0);
-		for (const index_t o : irange(0, self.n_objects))
-		    for (const cell_t c: self.cells_from_box(self.objects[o])) {
+		for (const index_t o : irange(0, self.n_objects)) {
+		    for (const cell_t& c : self.cells_from_box(self.objects[o])) {
+                std::cout << "test" << std::endl;
 		        _cell_id.push_back(self.spec.hash_from_cell(c));
 		        _object_id.push_back(o);
 		    }
+		}
 		self.object_id = ndarray_from_range(_object_id);
 		return ndarray_from_range(_cell_id);
 	}
@@ -58,10 +60,21 @@ public:
         const cell_t prod(shape * strides); // can we replace double int division by this?
         const index_t size(prod(prod.size() - 1));
 
-        auto mod = [](cell_t l, cell_t r) {return l - ((l / r) * r);};
+        std::cout << box << std::endl;
+        std::cout << lb << std::endl;
+        std::cout << ub << std::endl;
+        std::cout << shape << std::endl;
+        std::cout << strides << std::endl;
+        std::cout << spec.shape << std::endl;
+        std::cout << spec.strides << std::endl;
+
+
+        // remainer after division
+        auto mod = [](const cell_t& l, const cell_t& r) {return l - ((l / r) * r);};
+        std::cout << mod((size-1) / strides, shape) << std::endl;
 
 		return irange(0, size)
-		        | transformed([&](auto h){return lb + mod(h / strides, shape);});
+		        | transformed([&](const index_t h){return lb + mod(h / strides, shape);});
     }
 
     inline static bool object_intersects_point(const box_t& box, const vector_t& point) {

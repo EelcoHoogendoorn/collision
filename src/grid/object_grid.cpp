@@ -69,8 +69,8 @@ public:
     ndarray<index_t, 2> intersect_points(const PointGrid<spec_t>& other) const {
 	    std::vector<pair_t> pairs;
 	    for (const fixed_t c : self.intersect_cells(other))
-	        for (index_t i : self.objects_from_existing_key(c))
-				for (index_t j : other.grid.indices_from_existing_key(c))
+	        for (const index_t i : self.objects_from_existing_key(c))
+				for (const index_t j : other.grid.indices_from_existing_key(c))
 				    if (self.object_intersects_point(self.objects[i], other.position[j]))
     					pairs.push_back(pair_t(i, j));
         return self.as_pair_array(pairs);
