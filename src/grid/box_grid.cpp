@@ -17,10 +17,12 @@ public:
     const ndarray<box_t>                    objects;
     // allocate as single 2xn array?
 	ndarray<index_t>                        object_id;   // id of box generating this grid entry
+	ndarray<cell_t>                   cells;     // the cell coordinates a box resides in
 	const ndarray<fixed_t>                  cell_id;     // the cell coordinates a box resides in
 	const SparseGrid<fixed_t, index_t>      grid;        // defines buckets
 
 	auto get_object_id()  const { return self.object_id; }
+	auto get_cells()  const { return self.cells.unview<index_t>(); }
 
 
 	// constructor
@@ -30,6 +32,7 @@ public:
 	    ObjectGrid  (spec, boxes.size()),
 		objects     (boxes.view<box_t>()),
 		object_id	(ndarray<index_t>({0})),
+		cells	    (ndarray<cell_t>({0})),
 		cell_id     (init_cells()),
         grid        (cell_id)
 	{
@@ -39,14 +42,18 @@ public:
 	auto init_cells() const {
 		std::vector<fixed_t> _cell_id(0);
 		std::vector<index_t> _object_id(0);
+		std::vector<cell_t> _cells(0);
 		for (const index_t o : irange(0, self.n_objects)) {
-		    for (const cell_t& c : self.cells_from_box(self.objects[o])) {
-                std::cout << "test" << std::endl;
-		        _cell_id.push_back(self.spec.hash_from_cell(c));
+		    for (const cell_t c : self.cells_from_box(self.objects[o])) {
+		        auto h = self.spec.hash_from_cell(c);
+//                std::cout << h << std::endl;
+		        _cell_id.push_back(h);
 		        _object_id.push_back(o);
+		        _cells.push_back(c);
 		    }
 		}
 		self.object_id = ndarray_from_range(_object_id);
+		self.cells = ndarray_from_range(_cells);
 		return ndarray_from_range(_cell_id);
 	}
 
@@ -60,18 +67,18 @@ public:
         const cell_t prod(shape * strides); // can we replace double int division by this?
         const index_t size(prod(prod.size() - 1));
 
-        std::cout << box << std::endl;
-        std::cout << lb << std::endl;
-        std::cout << ub << std::endl;
-        std::cout << shape << std::endl;
-        std::cout << strides << std::endl;
-        std::cout << spec.shape << std::endl;
-        std::cout << spec.strides << std::endl;
+//        std::cout << box << std::endl;
+//        std::cout << lb << std::endl;
+//        std::cout << ub << std::endl;
+//        std::cout << shape << std::endl;
+//        std::cout << strides << std::endl;
+//        std::cout << spec.shape << std::endl;
+//        std::cout << spec.strides << std::endl;
 
 
         // remainer after division
         auto mod = [](const cell_t& l, const cell_t& r) {return l - ((l / r) * r);};
-        std::cout << mod((size-1) / strides, shape) << std::endl;
+//        std::cout << mod((size-1) / strides, shape) << std::endl;
 
 		return irange(0, size)
 		        | transformed([&](const index_t h){return lb + mod(h / strides, shape);});

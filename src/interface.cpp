@@ -71,6 +71,7 @@ BOOST_PYTHON_MODULE(Collision)
 		.def("intersect_self",	    &BoxGrid2d::intersect_self)
 		.def("intersect_points",    &BoxGrid2d::intersect_points)
         .def("unique_keys",         &BoxGrid2d::get_unique_keys)
+        .def("cells",               &BoxGrid2d::get_cells)
 		;
 
 	class_<Spec3d>("Spec3d", init<ndarray<real_t, 2>, real_t>())
