@@ -21,20 +21,20 @@ class BaseGrid {
     cant put any state here, since it messes with initialization order
     */
 public:
-    typedef BaseGrid<spec_t, sub_t>			base_t;
+    typedef BaseGrid<spec_t, sub_t>         base_t;
     typedef typename spec_t::real_t         real_t;
-    typedef typename spec_t::index_t		index_t;
-    typedef typename spec_t::fixed_t		fixed_t;
+    typedef typename spec_t::index_t        index_t;
+    typedef typename spec_t::fixed_t        fixed_t;
 
-    typedef typename spec_t::box_t			box_t;
-    typedef typename spec_t::vector_t		vector_t;
-    typedef typename spec_t::cell_t			cell_t;
+    typedef typename spec_t::box_t          box_t;
+    typedef typename spec_t::vector_t       vector_t;
+    typedef typename spec_t::cell_t         cell_t;
     typedef erow<index_t, 2>                pair_t;
 
 
 public:
     sub_t&                                  self;
-    const spec_t				            spec;
+    const spec_t                            spec;
     const index_t                           n_objects;
 
     auto get_permutation()  const { return self.grid.permutation; }
