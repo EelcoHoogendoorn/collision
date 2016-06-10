@@ -71,9 +71,10 @@ private:
     }
     template<typename range_t>
     auto init_permutation(const range_t initial_permutation) const {
-        ndarray<index_t> _permutation({ n_keys });
+        ndarray<index_t> _permutation( list_of(n_keys) );
         boost::copy(initial_permutation, _permutation.begin());
         auto _keys = keys.range();
+        // add indirection to sort
         auto lex = [&](index_t l, index_t r) {return _keys[r] > _keys[l];};
         // wow, casting permutation to raw range yield factor 3 performance in sorted case
         boost::sort(_permutation.range(), lex);
@@ -88,7 +89,7 @@ private:
             | adjacent_filtered([](auto a, auto b)  {return a.value() != b.value();})
             | transformed(      [](auto i)          {return (index_t)i.index();});
         std::vector<index_t> cap = {n_keys};
-        return ndarray_from_range(boost::join(start, cap));
+        return ndarray_from_iterable(boost::join(start, cap));
     }
 
     // get n-th unique key

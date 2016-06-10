@@ -326,7 +326,7 @@ public:
     }
 
     /* view as range of the given viewtype VT; add asserts? */
-    const boost::iterator_range<TPtr> range() const {
+    boost::iterator_range<const TPtr> range() const {
         return boost::make_iterator_range(data(), data()+size());
     }
     boost::iterator_range<TPtr> range() {

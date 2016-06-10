@@ -53,7 +53,7 @@ public:
     // for some stupid reason cant get normal casting mechanisms to work
     ndarray<index_t, 2> as_pair_array(const std::vector<pair_t>& pairs) const {
         index_t n_pairs(pairs.size());
-        ndarray<index_t, 2> output({ n_pairs, 2});
+        ndarray<index_t, 2> output( list_of(n_pairs)(2) );
         boost::copy(pairs, output.view<pair_t>().begin());
         return output;
     }

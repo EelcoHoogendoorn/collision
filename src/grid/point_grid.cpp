@@ -71,7 +71,7 @@ public:
 private:
     // determine grid cells
     auto init_cells() const {
-        auto cell_id = ndarray<fixed_t>({ self.n_objects });
+        auto cell_id = ndarray<fixed_t>( list_of(self.n_objects) );
         for (index_t v : irange(0, self.n_objects))
             cell_id[v] = self.spec.hash_from_cell(self.spec.cell_from_position(self.position[v]));
         return cell_id;
