@@ -28,7 +28,7 @@ public:
 	const cell_t zeros;    //
 	const cell_t strides;  // for lex-ranking cells
 
-	GridSpec(
+	explicit GridSpec(
 	    const ndarray<real_t, 2> position,
 	    const real_t scale) :
 	    n_dim_  (n_dim),
