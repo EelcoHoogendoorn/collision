@@ -23,22 +23,22 @@ class BaseGrid {
 public:
     typedef BaseGrid<spec_t, sub_t>			base_t;
     typedef typename spec_t::real_t         real_t;
-	typedef typename spec_t::index_t		index_t;
-	typedef typename spec_t::fixed_t		fixed_t;
+    typedef typename spec_t::index_t		index_t;
+    typedef typename spec_t::fixed_t		fixed_t;
 
-	typedef typename spec_t::box_t			box_t;
-	typedef typename spec_t::vector_t		vector_t;
-	typedef typename spec_t::cell_t			cell_t;
-	typedef erow<index_t, 2>                pair_t;
+    typedef typename spec_t::box_t			box_t;
+    typedef typename spec_t::vector_t		vector_t;
+    typedef typename spec_t::cell_t			cell_t;
+    typedef erow<index_t, 2>                pair_t;
 
 
 public:
     sub_t&                                  self;
-	const spec_t				            spec;
+    const spec_t				            spec;
     const index_t                           n_objects;
 
-	auto get_permutation()  const { return self.grid.permutation; }
-	auto get_unique_keys()  const { return ndarray_from_range(self.grid.unique_keys()); }
+    auto get_permutation()  const { return self.grid.permutation; }
+    auto get_unique_keys()  const { return ndarray_from_range(self.grid.unique_keys()); }
 
 public:
     BaseGrid(
@@ -52,12 +52,9 @@ public:
 
     // for some stupid reason cant get normal casting mechanisms to work
     ndarray<index_t, 2> as_pair_array(const std::vector<pair_t>& pairs) const {
-	    index_t n_pairs(pairs.size());
+        index_t n_pairs(pairs.size());
         ndarray<index_t, 2> output({ n_pairs, 2});
-        for (index_t p : irange(0, n_pairs)) {
-            output[p][0] = pairs[p][0];
-            output[p][1] = pairs[p][1];
-        }
+        boost::copy(pairs, output.view<pair_t>().begin());
         return output;
     }
 
@@ -78,20 +75,20 @@ public:
         return self.as_pair_array(unique_pairs);
     }
 
-	// intersect two sparse grids, to get shared occupied cells
-	template<typename other_t>
-	std::vector<fixed_t> intersect_cells(const other_t& other) const {
-	    if (self.spec != other.spec)
-	        throw python_exception("Grids to be intersected do not have identical specifications");
+    // intersect two sparse grids, to get shared occupied cells
+    template<typename other_t>
+    std::vector<fixed_t> intersect_cells(const other_t& other) const {
+        if (self.spec != other.spec)
+            throw python_exception("Grids to be intersected do not have identical specifications");
 
         // for each intersection of cell hashes
-	    std::vector<fixed_t> intersection;
+        std::vector<fixed_t> intersection;
         boost::range::set_intersection(
             self.grid.unique_keys(),
             other.grid.unique_keys(),
             std::back_inserter(intersection)
         );
         return intersection;
-	}
+    }
 
 };
