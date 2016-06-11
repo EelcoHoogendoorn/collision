@@ -110,7 +110,7 @@ public:
     // initialize the stencil of hash offsets
     // boil this info further down to contiguous stretches?
     ndarray<fixed_t> compute_offsets(ndarray<fixed_t, 2> stencil) const {
-        auto arr = ndarray_from_range(
+        auto arr = ndarray_from_iterable(
             stencil.view<cell_t>()
                 | transformed([&](cell_t c){return hash_from_cell(c);})
                 | filtered([&](fixed_t h){return h > 0;})

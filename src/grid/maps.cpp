@@ -5,16 +5,6 @@
 
 
 template<typename key_t, typename value_t, typename index_t>
-class BaseMap {
-    /* interface of our custom map types; constructable from a range of key-value tuples, and read-only value lookup by key */
-
-//	template<typename items_range>
-//	BaseMap(const items_range& items) {};
-//
-//	inline value_t operator[](const key_t key) const {};
-};
-
-template<typename key_t, typename value_t, typename index_t>
 class HashMap {
     /* key-value map based on hashing of keys */
 
@@ -79,15 +69,26 @@ private:
     }
 
     auto init_keys() const {
-        return ndarray<key_t>({n_entries});
+        return ndarray<key_t>( list_of(n_entries) );
     }
 
     auto init_values() const {
-        ndarray<value_t> values({n_entries});
+        ndarray<value_t> values( list_of(n_entries) );
         fill(values, -1); 		//mark grid as unoccupied
         return values;
     }
 
+};
+
+
+template<typename key_t, typename value_t, typename index_t>
+class BaseMap {
+    /* interface of our custom map types; constructable from a range of key-value tuples, and read-only value lookup by key */
+
+//	template<typename items_range>
+//	BaseMap(const items_range& items) {};
+//
+//	inline value_t operator[](const key_t key) const {};
 };
 
 

@@ -65,32 +65,32 @@ BOOST_PYTHON_MODULE(Collision)
         .def("intersect_self",      &PointGrid2d::get_pairs)
         .def("unique_keys",         &PointGrid2d::get_unique_keys)
 		;
-	class_<BoxGrid2d>("BoxGrid2d", init<Spec2d, ndarray<real_t, 2>>())
-		.def("permutation",		    &BoxGrid2d::get_permutation)
-		.def("object_id",		    &BoxGrid2d::get_object_id)
-		.def("intersect_self",	    &BoxGrid2d::intersect_self)
-		.def("intersect_points",    &BoxGrid2d::intersect_points)
-        .def("unique_keys",         &BoxGrid2d::get_unique_keys)
-        .def("cells",               &BoxGrid2d::get_cells)
-		;
-
-	class_<Spec3d>("Spec3d", init<ndarray<real_t, 2>, real_t>())
-	    .def("stencil",             &Spec3d::compute_offsets)
-		;
-	class_<PointGrid3d>("PointGrid3d", init<Spec3d, ndarray<real_t, 2>, ndarray<index_t>>())
-		.def("cells",               &PointGrid3d::get_cells)
-		.def("permutation",         &PointGrid3d::get_permutation)
-        .def("intersect_self",      &PointGrid3d::get_pairs)
-        .def("update",              &PointGrid3d::update)
-		;
-	class_<BoxGrid3d>("BoxGrid3d", init<Spec3d, ndarray<real_t, 2>>())
-		.def("permutation",		    &BoxGrid3d::get_permutation)
-		.def("object_id",		    &BoxGrid3d::get_object_id)
-		.def("intersect_self",	    &BoxGrid3d::intersect_self)
-		.def("intersect_points",    &BoxGrid3d::intersect_points)
-
-//        .def("intersect_points",   &BoxGrid3d::intersect_points)
-		;
+//	class_<BoxGrid2d>("BoxGrid2d", init<Spec2d, ndarray<real_t, 2>>())
+//		.def("permutation",		    &BoxGrid2d::get_permutation)
+//		.def("object_id",		    &BoxGrid2d::get_object_id)
+//		.def("intersect_self",	    &BoxGrid2d::intersect_self)
+//		.def("intersect_points",    &BoxGrid2d::intersect_points)
+//        .def("unique_keys",         &BoxGrid2d::get_unique_keys)
+//        .def("cells",               &BoxGrid2d::get_cells)
+//		;
+//
+//	class_<Spec3d>("Spec3d", init<ndarray<real_t, 2>, real_t>())
+//	    .def("stencil",             &Spec3d::compute_offsets)
+//		;
+//	class_<PointGrid3d>("PointGrid3d", init<Spec3d, ndarray<real_t, 2>, ndarray<index_t>>())
+//		.def("cells",               &PointGrid3d::get_cells)
+//		.def("permutation",         &PointGrid3d::get_permutation)
+//        .def("intersect_self",      &PointGrid3d::get_pairs)
+//        .def("update",              &PointGrid3d::update)
+//		;
+//	class_<BoxGrid3d>("BoxGrid3d", init<Spec3d, ndarray<real_t, 2>>())
+//		.def("permutation",		    &BoxGrid3d::get_permutation)
+//		.def("object_id",		    &BoxGrid3d::get_object_id)
+//		.def("intersect_self",	    &BoxGrid3d::intersect_self)
+//		.def("intersect_points",    &BoxGrid3d::intersect_points)
+//
+////        .def("intersect_points",   &BoxGrid3d::intersect_points)
+//		;
 
 //	class_<Mesh>("Mesh", init<ndarray<float32, 2>, ndarray<float32, 2>, ndarray<int32, 2>, float32, float32>())
 //		.add_property("boxes",      &Mesh::get_boxes, &Mesh::set_boxes)

@@ -43,11 +43,12 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <python.h>
 #include <numpy/arrayobject.h>
+
 #include <boost/python.hpp>
 #include <boost/multi_array.hpp>
 #include <boost/cstdint.hpp>
 #include <boost/range.hpp>
-
+#include <boost/array.hpp>
 
 
 #include "exception.cpp"
@@ -288,16 +289,30 @@ public:
     }
 
     /* Construct a new array based on the given dimensions */
-    template<typename ExtentsList>
-    explicit numpy_boost(const ExtentsList& extents) :
+    template<typename list_t>
+    explicit numpy_boost(const list_t& list) :
         super(NULL, std::vector<typename super::index>(NDims, 0)),
         array(NULL)
     {
+        boost::array<npy_intp, NDims> ex = list.to_array(ex);
         npy_intp shape[NDims];
         for (int i=0; i<NDims; i++)
-            shape[i] = (npy_intp)extents[i];
+            shape[i] = ex[i];
         init_from_shape(shape);
     }
+
+
+//    /* Construct a new array based on the given dimensions */
+//    template<typename int_t>
+//    explicit numpy_boost(const boost::array<int_t, NDims>& extents) :
+//        super(NULL, std::vector<typename super::index>(NDims, 0)),
+//        array(NULL)
+//    {
+//        npy_intp shape[NDims];
+//        for (int i=0; i<NDims; i++)
+//            shape[i] = (npy_intp)extents[i];
+//        init_from_shape(shape);
+//    }
 
 
     /* construct new array and dont do anything */
@@ -326,7 +341,7 @@ public:
     }
 
     /* view as range of the given viewtype VT; add asserts? */
-    boost::iterator_range<const TPtr> range() const {
+    const boost::iterator_range<TPtr> range() const {
         return boost::make_iterator_range(data(), data()+size());
     }
     boost::iterator_range<TPtr> range() {

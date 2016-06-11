@@ -17,7 +17,7 @@ public:
     const ndarray<box_t>                    objects;
     // allocate as single 2xn array?
     ndarray<index_t>                        object_id;   // id of box generating this grid entry
-    ndarray<cell_t>                   cells;     // the cell coordinates a box resides in
+    ndarray<cell_t>                         cells;     // the cell coordinates a box resides in
     const ndarray<fixed_t>                  cell_id;     // the cell coordinates a box resides in
     const SparseGrid<fixed_t, index_t>      grid;        // defines buckets
 
@@ -31,8 +31,8 @@ public:
         const ndarray<real_t, 2> boxes) :
         ObjectGrid  (spec, boxes.size()),
         objects     (boxes.view<box_t>()),
-        object_id	(ndarray<index_t>({0})),
-        cells	    (ndarray<cell_t>({0})),
+        object_id   (ndarray<index_t>( list_of(0) )),
+        cells	    (ndarray<cell_t>( list_of(0) )),
         cell_id     (init_cells()),
         grid        (cell_id)
     {

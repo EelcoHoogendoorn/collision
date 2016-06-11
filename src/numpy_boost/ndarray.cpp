@@ -28,8 +28,7 @@ template<typename range_t>
 ndarray<typename boost::range_value<range_t>::type>
 ndarray_from_range(const range_t input) {
     typedef typename boost::range_value<range_t>::type element_t;
-    const boost::array<int, 1> shape = {{ boost::distance(input) }};
-    ndarray<element_t> output(shape);
+    ndarray<element_t> output( list_of(boost::distance(input)) );
     boost::copy(input, output.begin());
     return output;
 }
