@@ -2,7 +2,7 @@ import numpy as np
 
 import  collision.Collision as spatial
 from collision.mesh import Mesh, icosphere
-from collision import math
+from collision import mymath
 import collision.visualize.spheres
 
 import itertools
@@ -218,9 +218,9 @@ class Nonridid(MeshActor):
     def compute_edge_forces(self):
         edges = self.vertex_incidence * self.position
         compression = (self.rest_length - np.linalg.norm(edges, axis=1)) / self.rest_length
-        dir = math.normalize(edges)
+        dir = mymath.normalize(edges)
         relative_velocity = self.vertex_incidence * self.velocity
-        relative_velocity = math.dot(relative_velocity, dir)
+        relative_velocity = mymath.dot(relative_velocity, dir)
         force = compression * self.elasticity - relative_velocity * self.damping
         return self.vertex_incidence.T * (dir * force[:, None])
 
