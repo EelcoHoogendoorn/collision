@@ -5,7 +5,7 @@ import scipy.sparse
 import scipy.sparse.linalg
 import scipy.spatial
 
-import collision.math
+import collision.mymath
 
 class PolyData(object):
 
@@ -112,7 +112,7 @@ class Mesh(PolyData):
         """
         Compute vertex normals, by averaging the weighted sum of its incident face normals.
         """
-        return collision.math.normalize(self.vertex_volume_gradient())
+        return collision.mymath.normalize(self.vertex_volume_gradient())
 
     def volume(self):
         return (self.face_normals() * self.face_centroids()).sum() / 3
@@ -121,8 +121,8 @@ class Mesh(PolyData):
         """compute angles for each triangle-vertex"""
         edges = self.edges().reshape(-1, 3, 2)
         vecs = np.diff(self.vertices[edges], axis=2)[:, :, 0]
-        vecs = collision.math.normalize(vecs)
-        angles = np.arccos(-collision.math.dot(vecs[:, [1, 2, 0]], vecs[:, [2, 0, 1]]))
+        vecs = collision.mymath.normalize(vecs)
+        angles = np.arccos(-collision.mymath.dot(vecs[:, [1, 2, 0]], vecs[:, [2, 0, 1]]))
         assert np.allclose(angles.sum(axis=1), np.pi, rtol=1e-3)
         return angles
 
@@ -149,7 +149,7 @@ class Mesh(PolyData):
         """compute gradient of scalar function on vertices on faces"""
         normals = self.face_normals()
         face_area = np.linalg.norm(normals, axis=1)
-        normals = collision.math.normalize(normals)
+        normals = collision.mymath.normalize(normals)
 
         edges = self.edges().reshape(-1, 3, 2)
         vecs = np.diff(self.vertices[edges], axis=2)[:, :, 0, :]
@@ -161,7 +161,7 @@ class Mesh(PolyData):
         edges = self.edges().reshape(-1, 3, 2)
         sorted_edges = np.sort(edges, axis=-1)
         vecs = np.diff(self.vertices[sorted_edges], axis=2)[:, :, 0, :]
-        inner = collision.math.dot(vecs, field[:, None, :])
+        inner = collision.mymath.dot(vecs, field[:, None, :])
         cotan = 1 / np.tan(self.compute_angles())
         vertex_incidence = self.compute_vertex_incidence()
         return vertex_incidence.T * self.remap_edges(inner * cotan) / 2
@@ -188,7 +188,7 @@ class Mesh(PolyData):
         operator = scipy.sparse.linalg.LinearOperator(shape=laplacian.shape, matvec=heat)
 
         diffused = scipy.sparse.linalg.minres(operator, seed.astype(np.float64), tol=1e-5)[0]
-        gradient = -collision.math.normalize(self.compute_gradient(diffused))
+        gradient = -collision.mymath.normalize(self.compute_gradient(diffused))
         # self.plot(facevec=gradient)
         rhs = self.compute_divergence(gradient)
         phi = scipy.sparse.linalg.minres(laplacian, rhs)[0]
@@ -275,7 +275,7 @@ def refine_sphere(sphere):
     new_vertices = vertices[edges].mean(axis=1)
     new_vertices /= np.linalg.norm(new_vertices, axis=1, keepdims=True)
     sphere = triangulate_convex(np.concatenate((vertices, new_vertices)))
-    direction = collision.math.dot(sphere.face_normals(), sphere.face_centroids()) > 0
+    direction = collision.mymath.dot(sphere.face_normals(), sphere.face_centroids()) > 0
     faces = np.where(direction[:, None], sphere.faces[:, ::+1], sphere.faces[:, ::-1])
     sphere = Mesh(sphere.vertices, faces)
     return sphere
