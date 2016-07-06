@@ -41,17 +41,16 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include <stdexcept>
 
-#include <python.h>
+#include <Python.h>
 #include <numpy/arrayobject.h>
-
 #include <boost/python.hpp>
 #include <boost/multi_array.hpp>
 #include <boost/cstdint.hpp>
 #include <boost/range.hpp>
-#include <boost/array.hpp>
 
 
-#include "exception.cpp"
+
+#include "../exception.cpp"
 
 /* numpy_type_map<T>
 
@@ -121,7 +120,7 @@ namespace detail {
         point to it.
 
  */
-template<class T, int NDims=1>
+template<typename T, int NDims=1>
 class numpy_boost : public boost::multi_array_ref<T, NDims>
 {
 public:
@@ -187,7 +186,7 @@ public:
                                                std::multiplies<size_type>());
     }
 
-    template<class BT>
+    template<typename BT>
     void init_view(const BT& base)
     {
         array = base.array;
@@ -195,30 +194,30 @@ public:
 
         super::base_ = (TPtr)base.data();
 
-        storage_ = boost::c_storage_order();
+        super::storage_ = boost::c_storage_order();
 
-        const int ratio = sizeof(element) / sizeof(BT::element);
+        const int ratio = sizeof(typename super::element) / sizeof(typename BT::element);
 
         if (base.strides()[NDims-1] != ratio)
             throw python_exception("Cannot view the last axis as the given type");
 
         for (size_t i = 0; i < NDims; ++i)
         {
-          extent_list_[i] = base.shape()[i];
-          stride_list_[i] = base.strides()[i] / ratio;
+          super::extent_list_[i] = base.shape()[i];
+          super::stride_list_[i] = base.strides()[i] / ratio;
         }
-        std::fill_n(index_base_list_.begin(), NDims, 0);
+        std::fill_n(super::index_base_list_.begin(), NDims, 0);
 
-        origin_offset_ = 0;
-        directional_offset_ = 0;
+        super::origin_offset_ = 0;
+        super::directional_offset_ = 0;
 
-        num_elements_ = std::accumulate(extent_list_.begin(),
-                                        extent_list_.end(),
-                                        size_type(1),
-                                        std::multiplies<size_type>());
+        super::num_elements_ = std::accumulate(super::extent_list_.begin(),
+                                               super::extent_list_.end(),
+                                               size_type(1),
+                                               std::multiplies<size_type>());
     }
 
-    template<class BT>
+    template<typename BT>
     void init_unview(const BT& base)
     {
         array = base.array;
@@ -226,30 +225,30 @@ public:
 
         super::base_ = (TPtr)base.data();
 
-        storage_ = boost::c_storage_order();
+        super::storage_ = boost::c_storage_order();
 
-        const int ratio = sizeof(BT::element) / sizeof(element);
+        const int ratio = sizeof(typename BT::element) / sizeof(typename super::element);
 
-        if (ratio * sizeof(element) != sizeof(BT::element))
+        if (ratio * sizeof(typename super::element) != sizeof(typename BT::element))
             throw python_exception("Source and target dtype do not have a common denominator");
 
         for (size_t i = 0; i < NDims-1; ++i)
         {
-            extent_list_[i] = base.shape()[i];
-            stride_list_[i] = base.strides()[i] * ratio;
+            super::extent_list_[i] = base.shape()[i];
+            super::stride_list_[i] = base.strides()[i] * ratio;
         }
-        extent_list_[NDims-1] = ratio;
-        stride_list_[NDims-1] = 1;
+        super::extent_list_[NDims-1] = ratio;
+        super::stride_list_[NDims-1] = 1;
 
-        std::fill_n(index_base_list_.begin(), NDims, 0);
+        std::fill_n(super::index_base_list_.begin(), NDims, 0);
 
-        origin_offset_ = 0;
-        directional_offset_ = 0;
+        super::origin_offset_ = 0;
+        super::directional_offset_ = 0;
 
-        num_elements_ = std::accumulate(extent_list_.begin(),
-                                        extent_list_.end(),
-                                        size_type(1),
-                                        std::multiplies<size_type>());
+        super::num_elements_ = std::accumulate(super::extent_list_.begin(),
+                                               super::extent_list_.end(),
+                                               size_type(1),
+                                               std::multiplies<size_type>());
     }
 
     /* create empty array of the given shape */
@@ -262,6 +261,15 @@ public:
         }
         init_from_array(a);
     }
+
+    void init_resize(const size_type newsize) {
+        super::extent_list_[0] = newsize;
+        super::num_elements_ = std::accumulate(super::extent_list_.begin(),
+                                               super::extent_list_.end(),
+                                               size_type(1),
+                                               std::multiplies<size_type>());
+    }
+
 
 public:
     /* Construct from an existing Numpy array */
@@ -289,30 +297,16 @@ public:
     }
 
     /* Construct a new array based on the given dimensions */
-    template<typename list_t>
-    explicit numpy_boost(const list_t& list) :
+    template<typename ExtentsList>
+    explicit numpy_boost(const ExtentsList& extents) :
         super(NULL, std::vector<typename super::index>(NDims, 0)),
         array(NULL)
     {
-        boost::array<npy_intp, NDims> ex = list.to_array(ex);
         npy_intp shape[NDims];
         for (int i=0; i<NDims; i++)
-            shape[i] = ex[i];
+            shape[i] = (npy_intp)extents[i];
         init_from_shape(shape);
     }
-
-
-//    /* Construct a new array based on the given dimensions */
-//    template<typename int_t>
-//    explicit numpy_boost(const boost::array<int_t, NDims>& extents) :
-//        super(NULL, std::vector<typename super::index>(NDims, 0)),
-//        array(NULL)
-//    {
-//        npy_intp shape[NDims];
-//        for (int i=0; i<NDims; i++)
-//            shape[i] = (npy_intp)extents[i];
-//        init_from_shape(shape);
-//    }
 
 
     /* construct new array and dont do anything */
@@ -342,10 +336,10 @@ public:
 
     /* view as range of the given viewtype VT; add asserts? */
     const boost::iterator_range<TPtr> range() const {
-        return boost::make_iterator_range(data(), data()+size());
+        return boost::make_iterator_range(super::data(), super::data()+super::size());
     }
     boost::iterator_range<TPtr> range() {
-        return boost::make_iterator_range(data(), data()+size());
+        return boost::make_iterator_range(super::data(), super::data()+super::size());
     }
 
     /* view last axis as type; need to handle three cases here; ndim is bigger, equal or smaller */
@@ -363,13 +357,6 @@ public:
     return _view;
     }
 
-    void init_resize(const size_type newsize) {
-        extent_list_[0] = newsize;
-        num_elements_ = std::accumulate(extent_list_.begin(),
-                                        extent_list_.end(),
-                                        size_type(1),
-                                        std::multiplies<size_type>());
-    }
     // cap the length of the first axis
     self_type resize(const size_type newsize) const {
         self_type resized(*this);

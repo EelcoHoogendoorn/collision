@@ -17,8 +17,8 @@ dependencies:
   - mako
   - cffi
   # cppdev
-  - cmake
-  - boost =1.6*
+  - cmake >=3.5*
+  - boost =1.61*
   - eigen =3.2*
   # pydev
   - jupyter =1.0*

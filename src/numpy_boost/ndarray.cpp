@@ -9,8 +9,9 @@ defines numpy boost array types used
 #include <boost/range.hpp>
 #include <boost/range/irange.hpp>
 #include <boost/range/algorithm.hpp>
+#include <boost/assign.hpp>
 
-#include <python.h>
+#include <Python.h>
 
 #include "numpy_boost_python.hpp"
 
@@ -28,7 +29,8 @@ template<typename range_t>
 ndarray<typename boost::range_value<range_t>::type>
 ndarray_from_range(const range_t input) {
     typedef typename boost::range_value<range_t>::type element_t;
-    ndarray<element_t> output( list_of(boost::distance(input)) );
+    const boost::array<int, 1> shape = {{ boost::distance(input) }};
+    ndarray<element_t> output(shape);
     boost::copy(input, output.begin());
     return output;
 }
@@ -39,8 +41,7 @@ ndarray<typename boost::range_value<range_t>::type>
 ndarray_from_iterable(const range_t input) {
     typedef typename boost::range_value<range_t>::type element_t;
     std::vector<element_t> tmp;
-    for (const element_t e : input)
-        tmp.push_back(e);
+    push_back(tmp).range(input);
     return ndarray_from_range(tmp);
 }
 

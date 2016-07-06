@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include <python.h>
+#include <Python.h>
 
 
 class releaseGIL{
